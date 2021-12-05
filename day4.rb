@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-
 class Bingo
   attr_reader :draws, :boards
   def initialize(lines)
@@ -48,17 +47,18 @@ class Board
   end
 
   def play(call)
-    row = board.find { |r| r.find_index(call) }
-    row[row.find_index(call)] = nil if row
+    board.each { |r|
+	i = r.find_index(call)
+        r[i] = nil if i
+      }
   end
 
   def winner?
     # Rows:
-    return true if board.find { |r| r == WINRAR }
-    # Cols:
-    board.length.times.find { |col|
-      board.map { |r| r[col] } == WINRAR
-    }
+    board.find { |r| r == WINRAR } ||
+      board.length.times.find { |col|
+        board.map { |r| r[col] } == WINRAR
+      }
   end
 
   def sum
@@ -67,5 +67,5 @@ class Board
 end
 
 lines = ARGF.to_a.map(&:chomp)
-Bingo.new(lines.dup).part1
-Bingo.new(lines.dup).part2
+Bingo.new(lines).part1
+Bingo.new(lines).part2
