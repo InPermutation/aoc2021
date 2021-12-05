@@ -26,11 +26,8 @@ class Bingo
     puts 'Part 2'
     last_winner = nil
     for call in draws do
-      puts "call=#{call}"
       boards.each { |board| board.play(call) }
-      p :boards, boards
-      losers = boards.select { |board| !board.winner? }
-      p :losers, losers
+      losers = boards.reject(&:winner?)
       if losers.length == 1 then
         last_winner = losers.first
       elsif losers.length == 0 then
