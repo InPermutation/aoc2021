@@ -1,20 +1,40 @@
 #!/usr/bin/env ruby
 
+
 class Bingo
   attr_reader :draws, :boards
-  def initialize()
-    lines = ARGF.to_a.map(&:chomp)
+  def initialize(lines)
     @draws = lines.first.split(',').map(&:to_i)
     @boards = []
     lines.drop(1).each_slice(6) { |board|
       boards << Board.new(board.drop(1))
     }
+  end
 
+  def part1
     puts 'Part 1'
     for call in draws do
       boards.each { |board| board.play(call) }
       if b = boards.find { |board| board.winner? } then
         p b.sum * call
+        break
+      end
+    end
+  end
+  
+  def part2
+    puts 'Part 2'
+    last_winner = nil
+    for call in draws do
+      puts "call=#{call}"
+      boards.each { |board| board.play(call) }
+      p :boards, boards
+      losers = boards.select { |board| !board.winner? }
+      p :losers, losers
+      if losers.length == 1 then
+        last_winner = losers.first
+      elsif losers.length == 0 then
+        p last_winner.sum * call
         break
       end
     end
@@ -49,5 +69,6 @@ class Board
   end
 end
 
-
-dog = Bingo.new
+lines = ARGF.to_a.map(&:chomp)
+Bingo.new(lines.dup).part1
+Bingo.new(lines.dup).part2
