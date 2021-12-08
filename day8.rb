@@ -15,6 +15,13 @@ class Day8
     [0, 1, 2, 3, 4, 5, 6].freeze,
     [0, 1, 2, 3, 5, 6].freeze
   ].freeze
+  UNIQUE_LENGTHS = NUMERALS
+    .map(&:length)
+    .tally
+    .select { |_, c| c == 1 }
+    .map(&:first)
+    .to_set
+    .freeze
   POSSIBLE_PERMUTATIONS = 'abcdefg'
     .chars
     .permutation
@@ -33,14 +40,14 @@ class Day8
           .map { |sec|
             sec
               .split(' ')
-              .map { |digit| digit.chars.sort.join }
-          }
-      }
+              .map { |digit| digit.chars.sort.join }.freeze
+          }.freeze
+      }.freeze
   end
 
   def part1
     list.sum { |_, output|
-      output.count { |digit| [2, 3, 4, 7].include? digit.length }
+      output.count { |digit| UNIQUE_LENGTHS.include? digit.length }
     }
   end
 
