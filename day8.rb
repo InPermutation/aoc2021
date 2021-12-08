@@ -15,7 +15,13 @@ class Day8
     [0, 1, 2, 3, 4, 5, 6].freeze,
     [0, 1, 2, 3, 5, 6].freeze
   ].freeze
-  POSSIBLE_PERMUTATIONS = 'abcdefg'.chars.permutation.to_a.freeze
+  POSSIBLE_PERMUTATIONS = 'abcdefg'
+    .chars
+    .permutation
+    .map { |perm|
+      NUMERALS.map { |segments| perm.values_at(*segments).sort.join.freeze }.freeze
+    }
+    .freeze
 
   attr_reader :list
   def initialize(lines)
@@ -53,16 +59,12 @@ class Day8
   def deduce(patterns)
     patterns = patterns.to_set
     POSSIBLE_PERMUTATIONS
-      .select { |perm|
-        # look-ahead to see if numerals #1, 7, and 4 will work
-        (patterns.include?(perm[2] + perm[5]) || patterns.include?(perm[5] + perm[2])) &&
-          patterns.include?(perm.values_at(*NUMERALS[7]).sort.join) &&
-          patterns.include?(perm.values_at(*NUMERALS[4]).sort.join)
+      .select { |would_be|
+        patterns.include?(would_be[1]) &&
+          patterns.include?(would_be[4]) &&
+          patterns.include?(would_be[7])
       }
-      .map { |perm|
-        NUMERALS.map { |segments| perm.values_at(*segments).sort.join }
-      }
-      .select { |would_be| would_be.to_set == patterns }
+      .select { |would_be| (patterns ^ would_be).empty? }
       .first
   end
 end
