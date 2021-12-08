@@ -41,6 +41,8 @@ class Day8
     list.sum { |patterns, output| decode(patterns, output) }
   end
 
+  private
+
   def decode(patterns, output)
     h = deduce(patterns)
     numerals = output.map { |num| h.find_index(num) }
@@ -52,6 +54,9 @@ class Day8
     'abcdefg'
       .chars
       .permutation
+      .select { |perm|
+        # look-ahead to see if numeral#1 will work
+        patterns.include?(perm[2] + perm[5]) || patterns.include?(perm[5] + perm[2]) }
       .map { |perm|
         NUMERALS.map { |segments| segments.map { |seg| perm[seg] }.sort.join }
       }
