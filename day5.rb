@@ -29,10 +29,18 @@ class Day5
         x = points.first[0]
         ys = points.map(&:last).sort
         Range.new(*ys).map { |y| [x, y] }
-      else
+      elsif points.first[1] == points.last[1] then
         y = points.first[1]
         xs = points.map(&:first).sort
         Range.new(*xs).map { |x| [x, y] }
+      else
+        # diagonal
+        xs = Range.new(*points.map(&:first).sort).to_a
+        xs.reverse! if points.first[0] > points.last[0]
+        ys = Range.new(*points.map(&:last).sort).to_a
+        ys.reverse! if points.first[1] > points.last[1]
+        raise StandardError.new('length mismatch') unless xs.length == ys.length
+        xs.zip(ys)
       end
     }
   end
@@ -40,7 +48,12 @@ class Day5
   def part1
     pointsplosion(only_horiz_and_vert).tally.select { |p, c| c > 1 }.length
   end
+
+  def part2
+    pointsplosion(lines).tally.select { |p, c| c > 1}.length
+  end
 end
 
 day5 = Day5.new(ARGF.to_a.map(&:chomp))
-p day5.part1
+p 'Part 1', day5.part1
+p 'Part 2', day5.part2
