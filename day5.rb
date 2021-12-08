@@ -5,7 +5,7 @@ require 'set'
 class Day5
   attr_reader :lines
   def initialize(lines)
-    @lines = lines.map &Day5.method(:parse)
+    @lines = lines.map &self.class.method(:parse)
   end
 
   def self.parse(line)
