@@ -3,11 +3,17 @@
 class Day6
   attr_reader :list
   def initialize(list)
-    @list = list.split(',').map(&:to_i)
+    t = list.split(',').map(&:to_i).tally
+    t.default = 0
+    @list = (0..9).map { |i| t[i] }
   end
 
   def part1
     state_at(80)
+  end
+
+  def part2
+    state_at(256)
   end
 
   def state_at(n)
@@ -17,14 +23,21 @@ class Day6
       printf '.'
     end
     printf "\n"
-    school.length
+    school.sum
   end
 
   def incr(school)
-    babies = [8] * school.select { |fish| fish == 0 }.length
-    school.map { |fish| fish == 0 ? 6 : fish.pred } + babies
+    spawners = school[0]
+    for i in 1..8 do
+      school[i-1] = school[i]
+    end
+    school[8] = spawners
+    school[6] += spawners
+
+    school
   end
 end
 
 day6 = Day6.new(ARGF.to_a.map(&:chomp).first)
 p :part1, day6.part1
+p :part2, day6.part2
