@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 class Bingo
   attr_reader :draws, :boards
@@ -15,7 +16,7 @@ class Bingo
     puts 'Part 1'
     draws.each do |call|
       boards.each { |board| board.play(call) }
-      if b = boards.find { |board| board.winner? }
+      if b = boards.find(&:winner?)
         p b.sum * call
         break
       end
@@ -28,9 +29,10 @@ class Bingo
     draws.each do |call|
       boards.each { |board| board.play(call) }
       losers = boards.reject(&:winner?)
-      if losers.length == 1
+      case losers.length
+      when 1
         last_winner = losers.first
-      elsif losers.length == 0
+      when 0
         p last_winner.sum * call
         break
       end

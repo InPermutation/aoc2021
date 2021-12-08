@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 commands = ARGF.map do |line|
   parsed = line.chomp.split(' ', 2)

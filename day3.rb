@@ -1,4 +1,6 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
+
 diagnostics = ARGF.to_a.map(&:chomp)
 len = diagnostics[0].length
 
