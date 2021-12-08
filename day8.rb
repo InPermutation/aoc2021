@@ -4,17 +4,18 @@ require 'set'
 
 class Day8
   NUMERALS = [
-    [0, 1, 2, 4, 5, 6],
-    [2, 5],
-    [0, 2, 3, 4, 6],
-    [0, 2, 3, 5, 6],
-    [1, 2, 3, 5],
-    [0, 1, 3, 5, 6],
-    [0, 1, 3, 4, 5, 6],
-    [0, 2, 5],
-    [0, 1, 2, 3, 4, 5, 6],
-    [0, 1, 2, 3, 5, 6]
-  ]
+    [0, 1, 2, 4, 5, 6].freeze,
+    [2, 5].freeze,
+    [0, 2, 3, 4, 6].freeze,
+    [0, 2, 3, 5, 6].freeze,
+    [1, 2, 3, 5].freeze,
+    [0, 1, 3, 5, 6].freeze,
+    [0, 1, 3, 4, 5, 6].freeze,
+    [0, 2, 5].freeze,
+    [0, 1, 2, 3, 4, 5, 6].freeze,
+    [0, 1, 2, 3, 5, 6].freeze
+  ].freeze
+  POSSIBLE_PERMUTATIONS = 'abcdefg'.chars.permutation.to_a.freeze
 
   attr_reader :list
   def initialize(lines)
@@ -51,14 +52,21 @@ class Day8
 
   def deduce(patterns)
     patterns = patterns.to_set
-    'abcdefg'
-      .chars
-      .permutation
+    POSSIBLE_PERMUTATIONS
       .select { |perm|
         # look-ahead to see if numeral#1 will work
-        patterns.include?(perm[2] + perm[5]) || patterns.include?(perm[5] + perm[2]) }
+        patterns.include?(perm[2] + perm[5]) || patterns.include?(perm[5] + perm[2])
+      }
+      .select { |perm|
+        # look-ahead to see if numeral#7 will work
+        patterns.include? perm.values_at(*NUMERALS[7]).sort.join
+      }
+      .select { |perm|
+        # look-ahead to see if numeral#4 will work
+        patterns.include? perm.values_at(*NUMERALS[4]).sort.join
+      }
       .map { |perm|
-        NUMERALS.map { |segments| segments.map { |seg| perm[seg] }.sort.join }
+        NUMERALS.map { |segments| perm.values_at(*segments).sort.join }
       }
       .select { |would_be| would_be.to_set == patterns }
       .first
