@@ -4,13 +4,14 @@ require 'set'
 
 class Day5
   attr_reader :lines
+
   def initialize(lines)
-    @lines = lines.map &self.class.method(:parse)
+    @lines = lines.map(&self.class.method(:parse))
   end
 
   def self.parse(line)
     line.split(' -> ')
-      .map(&method(:parse_point))
+        .map(&method(:parse_point))
   end
 
   def self.parse_point(coords)
@@ -18,18 +19,18 @@ class Day5
   end
 
   def only_horiz_and_vert
-    @lines.select { |from, to|
+    @lines.select do |from, to|
       from[0] == to[0] || from[1] == to[1]
-    }
+    end
   end
 
   def pointsplosion(lines)
-    lines.flat_map { |points|
-      if points.first[0] == points.last[0] then
+    lines.flat_map do |points|
+      if points.first[0] == points.last[0]
         x = points.first[0]
         ys = points.map(&:last).sort
         Range.new(*ys).map { |y| [x, y] }
-      elsif points.first[1] == points.last[1] then
+      elsif points.first[1] == points.last[1]
         y = points.first[1]
         xs = points.map(&:first).sort
         Range.new(*xs).map { |x| [x, y] }
@@ -39,18 +40,19 @@ class Day5
         xs.reverse! if points.first[0] > points.last[0]
         ys = Range.new(*points.map(&:last).sort).to_a
         ys.reverse! if points.first[1] > points.last[1]
-        raise StandardError.new('length mismatch') unless xs.length == ys.length
+        raise StandardError, 'length mismatch' unless xs.length == ys.length
+
         xs.zip(ys)
       end
-    }
+    end
   end
 
   def part1
-    pointsplosion(only_horiz_and_vert).tally.select { |p, c| c > 1 }.length
+    pointsplosion(only_horiz_and_vert).tally.select { |_p, c| c > 1 }.length
   end
 
   def part2
-    pointsplosion(lines).tally.select { |p, c| c > 1}.length
+    pointsplosion(lines).tally.select { |_p, c| c > 1 }.length
   end
 end
 

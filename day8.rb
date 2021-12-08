@@ -16,39 +16,40 @@ class Day8
     [0, 1, 2, 3, 5, 6].freeze
   ].freeze
   UNIQUE_LENGTHS = NUMERALS
-    .map(&:length)
-    .tally
-    .select { |_, c| c == 1 }
-    .map(&:first)
-    .to_set
-    .freeze
+                   .map(&:length)
+                   .tally
+                   .select { |_, c| c == 1 }
+                   .map(&:first)
+                   .to_set
+                   .freeze
   POSSIBLE_PERMUTATIONS = 'abcdefg'
-    .chars
-    .permutation
-    .map { |perm|
-      NUMERALS.map { |segments| perm.values_at(*segments).sort.join.freeze }.freeze
-    }
-    .freeze
+                          .chars
+                          .permutation
+                          .map do |perm|
+    NUMERALS.map { |segments| perm.values_at(*segments).sort.join.freeze }.freeze
+  end
+                          .freeze
 
   attr_reader :list
+
   def initialize(lines)
     @list = lines
-      .map(&:chomp)
-      .map { |item|
-        item
-          .split(' | ')
-          .map { |sec|
-            sec
-              .split(' ')
-              .map { |digit| digit.chars.sort.join }.freeze
-          }.freeze
-      }.freeze
+            .map(&:chomp)
+            .map do |item|
+      item
+        .split(' | ')
+        .map do |sec|
+          sec
+            .split(' ')
+            .map { |digit| digit.chars.sort.join }.freeze
+        end.freeze
+    end.freeze
   end
 
   def part1
-    list.sum { |_, output|
+    list.sum do |_, output|
       output.count { |digit| UNIQUE_LENGTHS.include? digit.length }
-    }
+    end
   end
 
   def part2
@@ -66,11 +67,11 @@ class Day8
   def deduce(patterns)
     patterns = patterns.to_set
     POSSIBLE_PERMUTATIONS
-      .select { |would_be|
+      .select do |would_be|
         patterns.include?(would_be[1]) &&
           patterns.include?(would_be[4]) &&
           patterns.include?(would_be[7])
-      }
+      end
       .select { |would_be| (patterns ^ would_be).empty? }
       .first
   end

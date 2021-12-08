@@ -2,6 +2,7 @@
 
 class Day7
   attr_reader :list
+
   def initialize(list)
     @list = list.split(',').map(&:to_i)
   end
@@ -16,12 +17,10 @@ class Day7
 
   private
 
-  def lowest_cost
+  def lowest_cost(&block)
     min = list.min
     max = list.max
-    lowest = (min..max).min_by do |tgt|
-      yield tgt
-    end
+    lowest = (min..max).min_by(&block)
 
     yield lowest
   end
@@ -31,14 +30,13 @@ class Day7
   end
 
   def sum_dist(tgt)
-    list.map { |pos|
+    list.map do |pos|
       d = (pos - tgt).abs
       (0..d).sum
-    }.sum
+    end.sum
   end
 end
 
 day7 = Day7.new ARGF.first.chomp
 p :part1, day7.part1
 p :part2, day7.part2
-

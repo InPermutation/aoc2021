@@ -2,6 +2,7 @@
 
 class Day6
   attr_reader :list
+
   def initialize(list)
     t = list.split(',').map(&:to_i).tally
     t.default = 0
@@ -24,8 +25,8 @@ class Day6
 
   def incr(school)
     spawners = school[0]
-    for i in 1..8 do
-      school[i-1] = school[i]
+    (1..8).each do |i|
+      school[i - 1] = school[i]
     end
     school[8] = spawners
     school[6] += spawners

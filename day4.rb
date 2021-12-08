@@ -2,34 +2,35 @@
 
 class Bingo
   attr_reader :draws, :boards
+
   def initialize(lines)
     @draws = lines.first.split(',').map(&:to_i)
     @boards = []
-    lines.drop(1).each_slice(6) { |board|
+    lines.drop(1).each_slice(6) do |board|
       boards << Board.new(board.drop(1))
-    }
+    end
   end
 
   def part1
     puts 'Part 1'
-    for call in draws do
+    draws.each do |call|
       boards.each { |board| board.play(call) }
-      if b = boards.find { |board| board.winner? } then
+      if b = boards.find { |board| board.winner? }
         p b.sum * call
         break
       end
     end
   end
-  
+
   def part2
     puts 'Part 2'
     last_winner = nil
-    for call in draws do
+    draws.each do |call|
       boards.each { |board| board.play(call) }
       losers = boards.reject(&:winner?)
-      if losers.length == 1 then
+      if losers.length == 1
         last_winner = losers.first
-      elsif losers.length == 0 then
+      elsif losers.length == 0
         p last_winner.sum * call
         break
       end
@@ -47,18 +48,18 @@ class Board
   end
 
   def play(call)
-    board.each { |r|
-	i = r.find_index(call)
-        r[i] = nil if i
-      }
+    board.each do |r|
+      i = r.find_index(call)
+      r[i] = nil if i
+    end
   end
 
   def winner?
     # Rows:
     board.find { |r| r == WINRAR } ||
-      board.length.times.find { |col|
+      board.length.times.find do |col|
         board.map { |r| r[col] } == WINRAR
-      }
+      end
   end
 
   def sum
