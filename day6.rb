@@ -5,7 +5,7 @@ class Day6
   def initialize(list)
     t = list.split(',').map(&:to_i).tally
     t.default = 0
-    @list = (0..9).map { |i| t[i] }
+    @list = (0..8).map { |i| t[i] }
   end
 
   def part1
@@ -18,11 +18,7 @@ class Day6
 
   def state_at(n)
     school = list.clone
-    for day in 1..n do
-      school = incr(school)
-      printf '.'
-    end
-    printf "\n"
+    n.times { school = incr(school) }
     school.sum
   end
 
