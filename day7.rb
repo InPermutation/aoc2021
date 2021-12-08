@@ -7,20 +7,38 @@ class Day7
   end
 
   def part1
+    lowest_cost { |tgt| linear(tgt) }
+  end
+
+  def part2
+    lowest_cost { |tgt| sum_dist(tgt) }
+  end
+
+  private
+
+  def lowest_cost
     min = list.min
     max = list.max
     lowest = (min..max).min_by do |tgt|
-      cost(tgt)
+      yield tgt
     end
 
-    cost(lowest)
+    yield lowest
   end
 
-  def cost(tgt)
+  def linear(tgt)
     list.map { |pos| (pos - tgt).abs }.sum
+  end
+
+  def sum_dist(tgt)
+    list.map { |pos|
+      d = (pos - tgt).abs
+      (0..d).sum
+    }.sum
   end
 end
 
 day7 = Day7.new ARGF.first.chomp
 p :part1, day7.part1
+p :part2, day7.part2
 
