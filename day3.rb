@@ -2,16 +2,8 @@
 diagnostics = ARGF.to_a.map(&:chomp)
 len = diagnostics[0].length
 
-def tally(array)
-  # TODO: in ruby 2.7 this should be built into Enumerable
-  array.inject(Hash.new(0)) { |memo, item|
-    memo[item] += 1
-    memo
-  }
-end
-
 tallies = len.times.map do |pos|
-  tally(diagnostics.map { |diag| diag[pos] })
+  diagnostics.map { |diag| diag[pos] }.tally
 end
 
 puts 'Part 1'
@@ -29,7 +21,7 @@ puts 'Part 2'
 def find_by(diagnostics, len)
   len.times.inject(diagnostics) { |remaining, pos|
     return remaining if remaining.length == 1
-    t = tally(remaining.map { |diag| diag[pos] })
+    t = remaining.map { |diag| diag[pos] }.tally
     remaining.select { |d| yield d, t, pos }
   }
 end
