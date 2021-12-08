@@ -54,16 +54,10 @@ class Day8
     patterns = patterns.to_set
     POSSIBLE_PERMUTATIONS
       .select { |perm|
-        # look-ahead to see if numeral#1 will work
-        patterns.include?(perm[2] + perm[5]) || patterns.include?(perm[5] + perm[2])
-      }
-      .select { |perm|
-        # look-ahead to see if numeral#7 will work
-        patterns.include? perm.values_at(*NUMERALS[7]).sort.join
-      }
-      .select { |perm|
-        # look-ahead to see if numeral#4 will work
-        patterns.include? perm.values_at(*NUMERALS[4]).sort.join
+        # look-ahead to see if numerals #1, 7, and 4 will work
+        (patterns.include?(perm[2] + perm[5]) || patterns.include?(perm[5] + perm[2])) &&
+          patterns.include?(perm.values_at(*NUMERALS[7]).sort.join) &&
+          patterns.include?(perm.values_at(*NUMERALS[4]).sort.join)
       }
       .map { |perm|
         NUMERALS.map { |segments| perm.values_at(*segments).sort.join }
