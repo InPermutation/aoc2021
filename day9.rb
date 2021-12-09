@@ -3,29 +3,42 @@
 
 require 'set'
 
+Point = Struct.new(:x, :y)
+
+class HeightMap
+  attr_reader :width, :height
+
+  def initialize(lines)
+    @heights = lines.map { |line| line.chars.map(&:to_i).freeze }.freeze
+    @height = @heights.length
+    @width = @heights[0].length
+  end
+
+  def height_at(point)
+    @heights[point.y][point.x]
+  end
+end
+
 class Day9
   def part1
+    # Sum of the risk levels of all low points
     low_points.map(&method(:risk_level)).sum
   end
 
   def part2
-    # Product of the size of the three largest basins
+    # Multiply together the sizes of the three largest basins
     basins.map(&:length).sort.reverse.take(3).inject(&:*)
   end
 
   private
 
-  Point = Struct.new(:x, :y)
-
-  attr_reader :lines, :all_coords
+  attr_reader :height_map, :all_coords
 
   def initialize(lines)
-    @lines = lines.map { |line| line.chars.map(&:to_i).freeze }.freeze
-    @all_coords = lines.flat_map.with_index do |line, y|
-      line.length.times.map do |x|
-        Point.new(x, y)
-      end
-    end
+    @height_map = HeightMap.new(lines)
+    @all_coords = height_map.width.times.to_a
+                            .product(height_map.height.times.to_a)
+                            .map { |x, y| Point.new(x, y) }
   end
 
   def low_points
@@ -36,35 +49,25 @@ class Day9
   end
 
   def height(coords)
-    lines[coords.y][coords.x]
+    height_map.height_at(coords)
   end
 
   def risk_level(coords)
     1 + height(coords)
   end
 
+  NEIGHBORLY_DIRECTIONS = [
+    [0, 1].freeze,
+    [0, -1].freeze,
+    [1, 0].freeze,
+    [-1, 0].freeze
+  ].freeze
+
   def neighbors(coords)
-    [left(coords), up(coords), right(coords), down(coords)].compact
-  end
-
-  def left(coords)
-    x, y = coords.x, coords.y
-    Point.new(x - 1, y) if x.positive?
-  end
-
-  def up(coords)
-    x, y = coords.x, coords.y
-    Point.new(x, y - 1) if y.positive?
-  end
-
-  def right(coords)
-    x, y = coords.x, coords.y
-    Point.new(x + 1, y) if x + 1 < lines[y].length
-  end
-
-  def down(coords)
-    x, y = coords.x, coords.y
-    Point.new(x, y + 1) if y + 1 < lines.length
+    NEIGHBORLY_DIRECTIONS
+      .map { |dx, dy| Point.new(coords.x + dx, coords.y + dy) }
+      .select { |p| (0...height_map.width).include? p.x }
+      .select { |p| (0...height_map.height).include? p.y }
   end
 
   def basins
