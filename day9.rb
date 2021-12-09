@@ -23,7 +23,7 @@ class Day9
 
   def all_coords
     lines.flat_map.with_index do |line, y|
-      line.map.with_index do |_, x|
+      line.length.times.map do |x|
         [x, y]
       end
     end
