@@ -23,8 +23,8 @@ class Day9
   def low_points
     all_coords.select do |x, y|
       neighbors(x, y)
-          .map { |coords| height(*coords) }
-          .all? { |nheight| nheight > height(x, y) }
+        .map { |coords| height(*coords) }
+        .all? { |nheight| nheight > height(x, y) }
     end
   end
 
@@ -36,8 +36,8 @@ class Day9
     r = []
     uy = lines.length - 1
     ux = lines[0].length - 1
-    r << [x - 1, y] if x > 0
-    r << [x, y - 1] if y > 0
+    r << [x - 1, y] if x.positive?
+    r << [x, y - 1] if y.positive?
     r << [x, y + 1] if y < uy
     r << [x + 1, y] if x < ux
 
