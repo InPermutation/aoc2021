@@ -4,12 +4,6 @@
 require 'set'
 
 class Day9
-  attr_reader :lines
-
-  def initialize(lines)
-    @lines = lines.map { |line| line.chars.map(&:to_i).freeze }.freeze
-  end
-
   def part1
     low_points.map(&method(:risk_level)).sum
   end
@@ -21,10 +15,15 @@ class Day9
 
   private
 
-  def all_coords
-    lines.flat_map.with_index do |line, y|
+  Point = Struct.new(:x, :y)
+
+  attr_reader :lines, :all_coords
+
+  def initialize(lines)
+    @lines = lines.map { |line| line.chars.map(&:to_i).freeze }.freeze
+    @all_coords = lines.flat_map.with_index do |line, y|
       line.length.times.map do |x|
-        [x, y]
+        Point.new(x, y)
       end
     end
   end
@@ -37,8 +36,7 @@ class Day9
   end
 
   def height(coords)
-    x, y = coords
-    lines[y][x]
+    lines[coords.y][coords.x]
   end
 
   def risk_level(coords)
@@ -50,23 +48,23 @@ class Day9
   end
 
   def left(coords)
-    x, y = coords
-    [x - 1, y] if x.positive?
+    x, y = coords.x, coords.y
+    Point.new(x - 1, y) if x.positive?
   end
 
   def up(coords)
-    x, y = coords
-    [x, y - 1] if y.positive?
+    x, y = coords.x, coords.y
+    Point.new(x, y - 1) if y.positive?
   end
 
   def right(coords)
-    x, y = coords
-    [x + 1, y] if x + 1 < lines[y].length
+    x, y = coords.x, coords.y
+    Point.new(x + 1, y) if x + 1 < lines[y].length
   end
 
   def down(coords)
-    x, y = coords
-    [x, y + 1] if y + 1 < lines.length
+    x, y = coords.x, coords.y
+    Point.new(x, y + 1) if y + 1 < lines.length
   end
 
   def basins
