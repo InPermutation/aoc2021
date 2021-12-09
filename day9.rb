@@ -9,18 +9,22 @@ class Day9
   end
 
   def part1
-    low_points.map(&:succ).sum
+    low_points.map { |x, y| height(x, y) + 1 }.sum
   end
 
-  private
+  def all_coords
+    lines.flat_map.with_index do |line, y|
+      line.map.with_index do |_, x|
+        [x, y]
+      end
+    end
+  end
 
   def low_points
-    lines.flat_map.with_index do |line, y|
-      line.select.with_index do |height, x|
-        neighbors(x, y)
+    all_coords.select do |x, y|
+      neighbors(x, y)
           .map { |coords| height(*coords) }
-          .all? { |nheight| nheight > height }
-      end
+          .all? { |nheight| nheight > height(x, y) }
     end
   end
 
