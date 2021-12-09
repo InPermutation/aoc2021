@@ -46,16 +46,27 @@ class Day9
   end
 
   def neighbors(coords)
-    x, y = coords
-    r = []
-    uy = lines.length - 1
-    ux = lines[0].length - 1
-    r << [x - 1, y] if x.positive?
-    r << [x, y - 1] if y.positive?
-    r << [x, y + 1] if y < uy
-    r << [x + 1, y] if x < ux
+    [left(coords), up(coords), right(coords), down(coords)].compact
+  end
 
-    r
+  def left(coords)
+    x, y = coords
+    [x - 1, y] if x.positive?
+  end
+
+  def up(coords)
+    x, y = coords
+    [x, y - 1] if y.positive?
+  end
+
+  def right(coords)
+    x, y = coords
+    [x + 1, y] if x + 1 < lines[y].length
+  end
+
+  def down(coords)
+    x, y = coords
+    [x, y + 1] if y + 1 < lines.length
   end
 
   def basins
@@ -68,8 +79,8 @@ class Day9
 
     until explore_from.empty?
       discovered = neighbors(explore_from.shift)
-                   .reject { |coords| height(coords) == 9 }
-                   .reject { |coords| basin.include? coords }
+                   .reject { |neighbor| height(neighbor) == 9 }
+                   .reject { |neighbor| basin.include? neighbor }
       basin = basin.merge(discovered)
       explore_from.push(*discovered)
     end
