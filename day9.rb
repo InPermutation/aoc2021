@@ -62,13 +62,13 @@ class Day9
   end
 
   def flood_fill(x, y)
-    basin = Set.new([ [x, y] ])
-    explore_from = [ [x, y] ]
+    basin = Set.new([[x, y]])
+    explore_from = [[x, y]]
 
     until explore_from.empty?
       discovered = neighbors(*explore_from.shift)
-        .reject { |x, y| height(x, y) == 9 }
-        .reject { |coords| basin.include? coords }
+                   .reject { |x, y| height(x, y) == 9 }
+                   .reject { |coords| basin.include? coords }
       basin = basin.merge(discovered)
       explore_from.push(*discovered)
     end
