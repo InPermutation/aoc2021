@@ -11,7 +11,7 @@ class Day9
   end
 
   def part1
-    low_points.map { |coords| risk_level(coords) }.sum
+    low_points.map(&method(:risk_level)).sum
   end
 
   def part2
@@ -70,7 +70,7 @@ class Day9
   end
 
   def basins
-    low_points.map { |coords| flood_fill(coords) }
+    low_points.map(&method(:flood_fill))
   end
 
   def flood_fill(coords)
@@ -80,7 +80,7 @@ class Day9
     until explore_from.empty?
       discovered = neighbors(explore_from.shift)
                    .reject { |neighbor| height(neighbor) == 9 }
-                   .reject { |neighbor| basin.include? neighbor }
+                   .reject(&basin.method(:include?))
       basin = basin.merge(discovered)
       explore_from.push(*discovered)
     end
