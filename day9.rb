@@ -9,8 +9,11 @@ class Day9
   end
 
   def part1
-    low_points.map { |x, y| height(x, y) + 1 }.sum
+    low_points.map { |x, y| risk_level(x, y) }.sum
   end
+
+
+  private
 
   def all_coords
     lines.flat_map.with_index do |line, y|
@@ -32,6 +35,10 @@ class Day9
     lines[y][x]
   end
 
+  def risk_level(x, y)
+    1 + height(x, y)
+  end
+
   def neighbors(x, y)
     r = []
     uy = lines.length - 1
@@ -46,4 +53,4 @@ class Day9
 end
 
 day9 = Day9.new(ARGF.map(&:chomp).to_a)
-p day9.part1
+p part1: day9.part1
