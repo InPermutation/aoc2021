@@ -11,7 +11,7 @@ class Day9
   end
 
   def part1
-    low_points.map { |x, y| risk_level(x, y) }.sum
+    low_points.map { |coords| risk_level(coords) }.sum
   end
 
   def part2
@@ -30,22 +30,23 @@ class Day9
   end
 
   def low_points
-    all_coords.select do |x, y|
-      neighbors(x, y)
-        .map { |coords| height(*coords) }
-        .all? { |nheight| nheight > height(x, y) }
+    all_coords.select do |coords|
+      neighbors(coords)
+        .all? { |neighbor| height(neighbor) > height(coords) }
     end
   end
 
-  def height(x, y)
+  def height(coords)
+    x, y = coords
     lines[y][x]
   end
 
-  def risk_level(x, y)
-    1 + height(x, y)
+  def risk_level(coords)
+    1 + height(coords)
   end
 
-  def neighbors(x, y)
+  def neighbors(coords)
+    x, y = coords
     r = []
     uy = lines.length - 1
     ux = lines[0].length - 1
@@ -58,16 +59,16 @@ class Day9
   end
 
   def basins
-    low_points.map { |x, y| flood_fill(x, y) }
+    low_points.map { |coords| flood_fill(coords) }
   end
 
-  def flood_fill(x, y)
-    basin = Set.new([[x, y]])
-    explore_from = [[x, y]]
+  def flood_fill(coords)
+    basin = Set.new([coords])
+    explore_from = [coords]
 
     until explore_from.empty?
-      discovered = neighbors(*explore_from.shift)
-                   .reject { |x, y| height(x, y) == 9 }
+      discovered = neighbors(explore_from.shift)
+                   .reject { |coords| height(coords) == 9 }
                    .reject { |coords| basin.include? coords }
       basin = basin.merge(discovered)
       explore_from.push(*discovered)
