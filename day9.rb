@@ -17,19 +17,25 @@ class Day9
   def low_points
     lines.flat_map.with_index do |line, y|
       line.select.with_index do |height, x|
-        neighbors(x, y).all? { |nheight| nheight > height }
+        neighbors(x, y)
+          .map { |coords| height(*coords) }
+          .all? { |nheight| nheight > height }
       end
     end
+  end
+
+  def height(x, y)
+    lines[y][x]
   end
 
   def neighbors(x, y)
     r = []
     uy = lines.length - 1
     ux = lines[0].length - 1
-    r << lines[y][x-1] if x > 0
-    r << lines[y-1][x] if y > 0
-    r << lines[y+1][x] if y < uy
-    r << lines[y][x+1] if x < ux
+    r << [x - 1, y] if x > 0
+    r << [x, y - 1] if y > 0
+    r << [x, y + 1] if y < uy
+    r << [x + 1, y] if x < ux
 
     r
   end
