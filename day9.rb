@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require 'set'
+
 class Day9
   attr_reader :lines
 
@@ -12,6 +14,10 @@ class Day9
     low_points.map { |x, y| risk_level(x, y) }.sum
   end
 
+  def part2
+    # Product of the size of the three largest basins
+    basins.map(&:length).sort.reverse.take(3).inject(&:*)
+  end
 
   private
 
@@ -50,7 +56,27 @@ class Day9
 
     r
   end
+
+  def basins
+    low_points.map { |x, y| flood_fill(x, y) }
+  end
+
+  def flood_fill(x, y)
+    basin = Set.new([ [x, y] ])
+    explore_from = [ [x, y] ]
+
+    until explore_from.empty?
+      discovered = neighbors(*explore_from.shift)
+        .reject { |x, y| height(x, y) == 9 }
+        .reject { |coords| basin.include? coords }
+      basin = basin.merge(discovered)
+      explore_from.push(*discovered)
+    end
+
+    basin.to_a
+  end
 end
 
 day9 = Day9.new(ARGF.map(&:chomp).to_a)
 p part1: day9.part1
+p part2: day9.part2
