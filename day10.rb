@@ -17,9 +17,9 @@ class Day10
 
   def part1
     errs = lines
-      .map(&method(:first_error))
-      .compact
-      .map(&SYNTAX_ERROR_SCORE.method(:[]))
+      .map(&method(:syntax_check))
+      .select(&method(:corrupt?))
+      .map { |_, wrong| SYNTAX_ERROR_SCORE[wrong] }
       .sum
   end
 
@@ -31,23 +31,32 @@ class Day10
     @lines = lines
   end
 
-  def first_error(line)
+  def syntax_check(line)
     stack = []
     line.chars.each do |ch|
       if CHUNK_PAIRS.include?(ch)
         stack.push(ch)
       elsif stack.empty?
-        # incomplete
-        return
+        return [:incomplete, stack]
       elsif CHUNK_PAIRS[stack.pop] == ch
         next
       else
-        # err
-        return ch
+        return [:corrupt, ch]
       end
     end
-    # all ok
-    return
+    return [:complete]
+  end
+
+  def corrupt?(state)
+    state[0] == :corrupt
+  end
+
+  def compete?(state)
+    state[0] == :complete
+  end
+
+  def incomplete?(state)
+    state[0] == :incomplete
   end
 end
 
