@@ -27,7 +27,7 @@ class Day10
     lines
       .map(&method(:syntax_check))
       .select(&method(:corrupt?))
-      .map { |_, wrong| SYNTAX_ERROR_SCORE[wrong] }
+      .map(&method(:syntax_error_score))
       .sum
   end
 
@@ -35,12 +35,10 @@ class Day10
     scores = lines
       .map(&method(:syntax_check))
       .select(&method(:incomplete?))
-      .map { |_, stack|
-        stack.reverse.reduce(0) { |score, char|
-          score * 5 + AUTOCOMPLETE_SCORE[CHUNK_PAIRS[char]]
-        }
-      }
+      .map(&method(:autocomplete_score))
 
+    # the winner is found by sorting all of the scores
+    # and then taking the middle score
     scores.sort[scores.length / 2]
   end
 
@@ -49,7 +47,7 @@ class Day10
   attr_reader :lines
 
   def initialize(lines)
-    @lines = lines
+    @lines = lines.freeze
   end
 
   def syntax_check(line)
@@ -86,6 +84,23 @@ class Day10
 
   def incomplete?(state)
     state[0] == :incomplete
+  end
+
+  def syntax_error_score(state)
+    case state
+      in [:corrupt, wrong]
+        SYNTAX_ERROR_SCORE[wrong]
+    end
+  end
+
+  def autocomplete_score(state)
+    case state
+      in [:incomplete, stack]
+        stack
+          .reverse
+          .map { AUTOCOMPLETE_SCORE[CHUNK_PAIRS[_1]] }
+          .reduce(0) { |total, point_value| total * 5 + point_value }
+    end
   end
 end
 
