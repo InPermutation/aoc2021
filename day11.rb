@@ -2,18 +2,12 @@
 # frozen_string_literal: true
 
 class Day11
-  def print_both_parts!
-    flashes = 0
-    first_sync = nil
-    step = 0
-    until first_sync && step >= 100
-      flashes += step!
-      step += 1
+  def part1
+    step_forever!.take(100).sum
+  end
 
-      puts "part 1: #{flashes}" if step == 100
-      first_sync ||= step if all_zero?
-    end
-    puts "part 2: #{first_sync}"
+  def part2
+    1 + step_forever!.find_index { all_zero? }
   end
 
   private
@@ -27,15 +21,15 @@ class Day11
   end
 
   def indexes
-    grid.length.times.flat_map do |y|
-      grid[y].length.times.map do |x|
+    grid.flat_map.with_index do |line, y|
+      line.length.times.map do |x|
         [x, y]
       end
     end
   end
 
   def all_zero?
-    indexes.all? { |x, y| grid[y][x].zero? }
+    grid.all? { |line| line.all?(&:zero?) }
   end
 
   NEIGHBOR_DIRECTIONS =
@@ -57,15 +51,17 @@ class Day11
     indexes.each { |x, y| grid[y][x] += 1 }
   end
 
+  def step_forever!
+    Enumerator.new { |y| loop { y << step! } }
+  end
+
   def step!
-    flashes = 0
     increase_by_1!
-    loop do
-      f = flash!
-      flashes += f
-      break if f.zero?
-    end
-    flashes
+    flash_forever!.take_while(&:positive?).sum
+  end
+
+  def flash_forever!
+    Enumerator.new { |y| loop { y << flash! } }
   end
 
   def flash!
@@ -86,6 +82,8 @@ class Day11
       .each { |x1, y1| grid[y1][x1] += 1 }
   end
 end
-
-day11 = Day11.new(ARGF.map(&:chomp))
-day11.print_both_parts!
+lines = ARGF.map(&:chomp).freeze
+day11 = Day11.new(lines.dup)
+p part1: day11.part1
+day11 = Day11.new(lines.dup)
+p part2: day11.part2
