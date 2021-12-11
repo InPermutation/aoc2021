@@ -17,14 +17,9 @@ class Day11
       end
 
       puts "part 1: #{flashes}" if step == 100
-      unless first_sync
-        first_sync = step if all_zero?(grid)
-      end
+      first_sync ||= step if all_zero?(grid)
     end
     puts "part 2: #{first_sync}"
-  end
-
-  def part2
   end
 
   private
