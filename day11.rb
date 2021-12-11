@@ -2,19 +2,26 @@
 # frozen_string_literal: true
 
 class Day11
-  def part1
+  def print_both_parts!
     grid = initial_energy.map(&:dup)
     flashes = 0
-    100.times do
+    first_sync = nil
+    step = 0
+    until first_sync && step >= 100
+      step += 1
       increase_by_1!(grid)
       loop do
         f = flash!(grid)
         flashes += f
         break if f.zero?
       end
-    end
 
-    flashes
+      puts "part 1: #{flashes}" if step == 100
+      unless first_sync
+        first_sync = step if all_zero?(grid)
+      end
+    end
+    puts "part 2: #{first_sync}"
   end
 
   def part2
@@ -36,6 +43,10 @@ class Day11
         [x, y]
       end
     end
+  end
+
+  def all_zero?(grid)
+    indexes(grid).all? { |x, y| grid[y][x].zero? }
   end
 
   NEIGHBOR_DIRECTIONS =
@@ -74,5 +85,4 @@ class Day11
 end
 
 day11 = Day11.new(ARGF.map(&:chomp))
-p :part1, day11.part1
-p :part2, day11.part2
+day11.print_both_parts!
