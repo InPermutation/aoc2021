@@ -28,26 +28,30 @@ class Day12
 
   private
 
-  attr_reader :edges
+  attr_reader :neighbors
 
   def initialize(lines)
-    @edges = lines.map { _1.split('-') }
+    h = Hash.new
+    lines.map { _1.split('-') }.each do |a, b|
+      unless b == 'start' || a == 'end'
+        h[a] ||= []
+        h[a].push(b)
+      end
+      unless b == 'end' || a == 'start'
+        h[b] ||= []
+        h[b].push(a)
+      end
+    end
+    @neighbors = h.freeze
   end
 
   def paths(route, &block)
     return [route] if route.last == 'end'
 
-    neighbors(route.last)
+    neighbors[route.last]
       .map { |cave| route.dup.push(cave) }
       .select(&block)
       .flat_map { |proposed_route| paths(proposed_route, &block) }
-  end
-
-  def neighbors(from)
-    potentials =
-      edges.select { |pair| pair.first == from }.map(&:last) +
-      edges.select { |pair| pair.last == from }.map(&:first)
-    potentials.reject { |cave| cave == 'start' }
   end
 
   def small?(cave)
