@@ -15,19 +15,13 @@ class Day12
 
   def part2
     ans = paths(['start']) do |route|
-      tallies = route
+      route
         .select(&method(:small?))
         .tally
         .values
-        .sort
-      if tallies.length == 0
-        raise NotImplementedException, tallies
-      elsif tallies.length == 1
-        tallies.last <= 2
-      else
-        last = tallies.pop
-        last <= 2 && tallies.max == 1
-      end
+        .map(&:pred)
+        .select(&:positive?)
+        .sum <= 1
     end
     ans.length
   end
