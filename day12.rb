@@ -3,7 +3,14 @@
 
 class Day12
   def part1
-    paths.length
+    ans = paths do |route|
+      route
+        .select(&method(:small?))
+        .tally
+        .values
+        .max < 2
+    end
+    ans.length
   end
 
   def part2
@@ -17,20 +24,22 @@ class Day12
     @edges = lines.map { _1.split('-') }
   end
 
-  def paths(route=nil)
+  def paths(route = nil, &block)
     route ||= ['start']
 
     return [route] if route.last == 'end'
 
     neighbors(route.last)
-      .reject { |cave| cave == 'start' }
-      .reject { |cave| small?(cave) && route.include?(cave) }
-      .flat_map { |cave| paths(route.dup.push(cave)) }
+      .map { |cave| route.dup.push(cave) }
+      .select { |proposed_route| block.yield proposed_route }
+      .flat_map { |proposed_route| paths(proposed_route, &block) }
   end
 
   def neighbors(from)
-    edges.select { |pair| pair.first == from }.map { |pair| pair.last } +
-      edges.select { |pair| pair.last == from }.map { |pair| pair.first }
+    potentials =
+      edges.select { |pair| pair.first == from }.map(&:last) +
+      edges.select { |pair| pair.last == from }.map(&:first)
+    potentials.reject { |cave| cave == 'start' }
   end
 
   def small?(cave)
