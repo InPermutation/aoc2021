@@ -3,7 +3,7 @@
 
 class Day12
   def part1
-    ans = paths do |route|
+    ans = paths(['start']) do |route|
       route
         .select(&method(:small?))
         .tally
@@ -14,6 +14,22 @@ class Day12
   end
 
   def part2
+    ans = paths(['start']) do |route|
+      tallies = route
+        .select(&method(:small?))
+        .tally
+        .values
+        .sort
+      if tallies.length == 0
+        raise NotImplementedException, tallies
+      elsif tallies.length == 1
+        tallies.last <= 2
+      else
+        last = tallies.pop
+        last <= 2 && tallies.max == 1
+      end
+    end
+    ans.length
   end
 
   private
@@ -24,9 +40,7 @@ class Day12
     @edges = lines.map { _1.split('-') }
   end
 
-  def paths(route = nil, &block)
-    route ||= ['start']
-
+  def paths(route, &block)
     return [route] if route.last == 'end'
 
     neighbors(route.last)
