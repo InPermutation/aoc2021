@@ -1,6 +1,8 @@
 input
 sample
 small_sample
+larger_sample
+even_larger_sample
 
 *.gem
 *.rbc
