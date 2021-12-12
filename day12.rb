@@ -3,18 +3,17 @@
 
 class Day12
   def part1
-    ans = paths(['start']) do |route|
+    paths(['start']) do |route|
       route
         .select(&method(:small?))
         .tally
         .values
         .max < 2
-    end
-    ans.length
+    end.length
   end
 
   def part2
-    ans = paths(['start']) do |route|
+    paths(['start']) do |route|
       route
         .select(&method(:small?))
         .tally
@@ -22,8 +21,7 @@ class Day12
         .map(&:pred)
         .select(&:positive?)
         .sum <= 1
-    end
-    ans.length
+    end.length
   end
 
   private
@@ -31,7 +29,7 @@ class Day12
   attr_reader :neighbors
 
   def initialize(lines)
-    h = Hash.new
+    h = {}
     lines.map { _1.split('-') }.each do |a, b|
       unless b == 'start' || a == 'end'
         h[a] ||= []
@@ -58,8 +56,6 @@ class Day12
     cave.downcase == cave
   end
 end
-lines = ARGF.map(&:chomp).freeze
-day12 = Day12.new(lines.dup)
-
+day12 = Day12.new(ARGF.map(&:chomp).freeze)
 p part1: day12.part1
 p part2: day12.part2
