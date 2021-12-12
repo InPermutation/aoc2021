@@ -39,7 +39,7 @@ class Day12
 
     neighbors(route.last)
       .map { |cave| route.dup.push(cave) }
-      .select { |proposed_route| block.yield proposed_route }
+      .select(&block)
       .flat_map { |proposed_route| paths(proposed_route, &block) }
   end
 
