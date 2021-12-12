@@ -20,7 +20,7 @@ end
 
 class Day12
   def part1
-    paths(Route.new(nil, 'start')) do |route|
+    paths do |route|
       route
         .small_tally
         .values
@@ -29,7 +29,7 @@ class Day12
   end
 
   def part2
-    paths(Route.new(nil, 'start')) do |route|
+    paths do |route|
       route
         .small_tally
         .values
@@ -46,17 +46,13 @@ class Day12
   def initialize(lines)
     h = Hash.new { |h, k| h[k] = [] }
     lines.map { _1.split('-') }.each do |a, b|
-      unless b == 'start' || a == 'end'
-        h[a].push(b)
-      end
-      unless b == 'end' || a == 'start'
-        h[b].push(a)
-      end
+      h[a].push(b) unless b == 'start' || a == 'end'
+      h[b].push(a) unless b == 'end' || a == 'start'
     end
     @neighbors = h.freeze
   end
 
-  def paths(route, &block)
+  def paths(route = Route.new(nil, 'start'), &block)
     return [route] if route.last == 'end'
 
     neighbors[route.last]
