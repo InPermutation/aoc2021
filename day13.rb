@@ -11,7 +11,9 @@ class Day13
   end
 
   def part2
-    raise NotImplementedError, :part2
+    show folds
+      .reduce(initial_dots, &method(:fold))
+      .uniq
   end
 
   private
@@ -49,9 +51,9 @@ class Day13
     dots.map do |x, y|
       case x
       when ..coord
-        [coord + coord - x, y]
-      else
         [x, y]
+      else
+        [coord + coord - x, y]
       end
     end
   end
@@ -60,13 +62,23 @@ class Day13
     dots.map do |x, y|
       case y
       when ..coord
-        [x, coord + coord - y]
-      else
         [x, y]
+      else
+        [x, coord + coord - y]
       end
     end
+  end
+
+  def show(dots)
+    max_x = dots.map { |x, _y| x }.max
+    max_y = dots.map { |_x, y| y }.max
+    (max_y + 1).times.map do |y|
+      (max_x + 1).times.map do |x|
+        dots.include?([x, y]) ? '#' : '.'
+      end.join('')
+    end.join("\n")
   end
 end
 day13 = Day13.new(ARGF.map(&:chomp).freeze)
 p part1: day13.part1
-p part2: day13.part2
+puts "part2:\n#{day13.part2}"
