@@ -39,32 +39,14 @@ class Day13
   end
 
   def fold(dots, fold)
-    case fold
-    in ['x', x]
-      fold_x(dots, x)
-    in ['y', y]
-      fold_y(dots, y)
-    end
-  end
-
-  def fold_x(dots, coord)
+    axis, coord = fold
     dots.map do |x, y|
-      case x
-      when ..coord
-        [x, y]
-      else
+      if axis == 'x' and x > coord
         [coord + coord - x, y]
-      end
-    end
-  end
-
-  def fold_y(dots, coord)
-    dots.map do |x, y|
-      case y
-      when ..coord
-        [x, y]
-      else
+      elsif axis == 'y' and y > coord
         [x, coord + coord - y]
+      else
+        [x, y]
       end
     end
   end
