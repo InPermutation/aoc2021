@@ -3,10 +3,7 @@
 
 class Day14
   def part1
-    polymer = template
-    10.times { polymer = insertion(polymer) }
-    t = polymer.chars.tally
-    min, max = t.values.minmax
+    min, max = insertion(template, 10).chars.tally.values.minmax
     max - min
   end
 
@@ -23,13 +20,25 @@ class Day14
              .drop(2)
              .map { |line| line.split(' -> ') }
              .to_h
+
+    @memo = {}
   end
 
-  def insertion(polymer)
-    polymer.chars.reduce do |result, ch|
-      rule = rules[result[-1] + ch]
-      rule ? result + rule + ch : result + ch
+  def insertion(polymer, depth)
+    return polymer if depth == 0
+
+    k = "#{" " * depth}#{polymer}"
+    return @memo[k] if @memo[k]
+
+    t = polymer.chars.each_cons(2).map do |a, b|
+      production = rules[a + b]
+      t = insertion(a + production + b, depth - 1)
+      t = t[0, t.length - 1]
+    end.reduce do |tally, curr|
+      tally + curr
     end
+    t += polymer.chars.last
+    @memo[k] = t
   end
 end
 day14 = Day14.new(ARGF.map(&:chomp).freeze)
