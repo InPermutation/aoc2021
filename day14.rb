@@ -27,23 +27,35 @@ class Day14
   end
 
   def tally_for(polymer, depth)
-    return polymer.chars.tally.freeze if depth == 0
+    return polymer.chars.tally.freeze if depth.zero?
 
-    k = "#{" " * depth}#{polymer}"
-    return @memo[k] if @memo[k]
+    k = "#{' ' * depth}#{polymer}"
+    @memo[k] ||= unmemoized_tally_for(polymer, depth)
+  end
 
-    t = polymer.chars.each_cons(2).map do |a, b|
-      production = rules[a + b]
-      t = tally_for(a + production + b, depth - 1).dup
-      t[b] -= 1
-      t
-    end.reduce do |tally, curr|
-      tally.merge(curr) { |_key, lval, rval| [lval, rval].compact.sum }
-    end
-    t[polymer.chars.last] += 1
-    @memo[k] = t.freeze
+  def unmemoized_tally_for(polymer, depth)
+    polymer
+      .chars
+      .each_cons(2)
+      .map { |a, b| tally_pair(a, b, depth) }
+      .reduce(&method(:merge_tally))
+      .tap { |t| t[polymer[-1]] += 1 }
+      .freeze
+  end
+
+  def tally_pair(left, right, depth)
+    production = rules[left + right]
+    tally_for(left + production + right, depth - 1)
+      .dup
+      .tap { |t| t[right] -= 1 }
+      .freeze
+  end
+
+  def merge_tally(tally, curr)
+    tally.merge(curr) { |_key, lval, rval| [lval, rval].compact.sum }
   end
 end
+
 day14 = Day14.new(ARGF.map(&:chomp).freeze)
 p part1: day14.part1
 p part2: day14.part2
