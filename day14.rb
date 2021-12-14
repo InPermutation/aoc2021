@@ -27,13 +27,13 @@ class Day14
   end
 
   def tally_for(polymer, depth)
-    return polymer.chars.tally.freeze if depth.zero?
-
     k = "#{' ' * depth}#{polymer}"
     @memo[k] ||= unmemoized_tally_for(polymer, depth)
   end
 
   def unmemoized_tally_for(polymer, depth)
+    return polymer.chars.tally.freeze if depth.zero?
+
     polymer
       .chars
       .each_cons(2)
