@@ -3,11 +3,13 @@
 
 class Day14
   def part1
-    min, max = insertion(template, 10).chars.tally.values.minmax
+    min, max = tally_for(template, 10).values.minmax
     max - min
   end
 
   def part2
+    min, max = tally_for(template, 40).values.minmax
+    max - min
   end
 
   private
@@ -24,21 +26,22 @@ class Day14
     @memo = {}
   end
 
-  def insertion(polymer, depth)
-    return polymer if depth == 0
+  def tally_for(polymer, depth)
+    return polymer.chars.tally.freeze if depth == 0
 
     k = "#{" " * depth}#{polymer}"
     return @memo[k] if @memo[k]
 
     t = polymer.chars.each_cons(2).map do |a, b|
       production = rules[a + b]
-      t = insertion(a + production + b, depth - 1)
-      t = t[0, t.length - 1]
+      t = tally_for(a + production + b, depth - 1).dup
+      t[b] -= 1
+      t
     end.reduce do |tally, curr|
-      tally + curr
+      tally.merge(curr) { |_key, lval, rval| [lval, rval].compact.sum }
     end
-    t += polymer.chars.last
-    @memo[k] = t
+    t[polymer.chars.last] += 1
+    @memo[k] = t.freeze
   end
 end
 day14 = Day14.new(ARGF.map(&:chomp).freeze)
