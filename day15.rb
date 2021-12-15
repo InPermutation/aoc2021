@@ -10,10 +10,39 @@ class Day15
     weights[[max_x, max_y]]
   end
 
+  def expand_map!
+    old_costs = costs
+    width = max_x + 1
+    height = max_y + 1
+    new_costs = {}
+    old_costs.each do |pt, v|
+      x, y = pt
+      5.times do |tx|
+        5.times do |ty|
+          new_costs[[x + tx * width, y + ty * height]] = cost_for(v + tx + ty)
+        end
+      end
+    end
+    @costs = new_costs
+    @all_points = @costs.keys.freeze
+    @max_y = all_points.map(&:last).max
+    @max_x = all_points.map(&:first).max
+  end
+
+  def cost_for(i)
+    while i > 9
+      i -= 9
+    end
+    i
+  end
+
   def part2
+    weights = dijkstras([0, 0])
+    weights[[max_x, max_y]]
   end
 
   private
+
 
   EFFECTIVE_INFINITY = 1 << 64
   def dijkstras(initial_node)
@@ -61,4 +90,5 @@ end
 
 day15 = Day15.new(ARGF.map(&:chomp).freeze)
 p part1: day15.part1
+day15.expand_map!
 p part2: day15.part2
