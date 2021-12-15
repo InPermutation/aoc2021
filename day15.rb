@@ -19,6 +19,7 @@ class Day15
     unvisited = Set.new(all_points)
     tentative_distance = all_points.map { |pt| [pt, EFFECTIVE_INFINITY] }.to_h
     tentative_distance[initial_node] = 0
+    unvisited_order = all_points.sort_by { |pt| tentative_distance[pt] }
     current_node = initial_node
 
     until unvisited.empty?
@@ -28,12 +29,16 @@ class Day15
         .each do |unvisited_neighbor|
         proposed_distance = my_distance + costs[unvisited_neighbor]
         if proposed_distance < tentative_distance[unvisited_neighbor]
+          unvisited_order.delete(unvisited_neighbor)
+          ix = unvisited_order.bsearch_index { |o| tentative_distance[o] > proposed_distance }
+          unvisited_order.insert(ix, unvisited_neighbor)
+
           tentative_distance[unvisited_neighbor] = proposed_distance
         end
       end
 
-      unvisited -= [current_node]
-      current_node = unvisited.min_by { |node| tentative_distance[node] }
+      unvisited.delete(current_node)
+      current_node = unvisited_order.shift
     end
     tentative_distance
   end
