@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require 'set'
+require 'lazy_priority_queue'
 
 class Day15
   def part1
@@ -17,28 +18,23 @@ class Day15
   EFFECTIVE_INFINITY = 1 << 64
   def dijkstras(initial_node)
     unvisited = Set.new(all_points)
-    tentative_distance = all_points.map { |pt| [pt, EFFECTIVE_INFINITY] }.to_h
-    tentative_distance[initial_node] = 0
-    unvisited_order = all_points.sort_by { |pt| tentative_distance[pt] }
-    current_node = initial_node
+    unvisited_pq = MinPriorityQueue.new
+    tentative_distance = all_points.map { |pt| [pt, pt == initial_node ? 0 : EFFECTIVE_INFINITY] }.to_h
+    tentative_distance.each { |pt, d| unvisited_pq.push(pt, d) }
 
     until unvisited.empty?
+      current_node = unvisited_pq.pop
+      unvisited.delete(current_node)
       my_distance = tentative_distance[current_node]
       neighbors(current_node)
         .select(&unvisited.method(:include?))
         .each do |unvisited_neighbor|
         proposed_distance = my_distance + costs[unvisited_neighbor]
         if proposed_distance < tentative_distance[unvisited_neighbor]
-          unvisited_order.delete(unvisited_neighbor)
-          ix = unvisited_order.bsearch_index { |o| tentative_distance[o] > proposed_distance }
-          unvisited_order.insert(ix, unvisited_neighbor)
-
+          unvisited_pq.decrease_key(unvisited_neighbor, proposed_distance)
           tentative_distance[unvisited_neighbor] = proposed_distance
         end
       end
-
-      unvisited.delete(current_node)
-      current_node = unvisited_order.shift
     end
     tentative_distance
   end
