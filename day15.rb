@@ -30,9 +30,7 @@ class Day15
   end
 
   def cost_for(i)
-    while i > 9
-      i -= 9
-    end
+    i -= 9 while i > 9
     i
   end
 
@@ -42,7 +40,6 @@ class Day15
   end
 
   private
-
 
   EFFECTIVE_INFINITY = 1 << 64
   def dijkstras(initial_node)
