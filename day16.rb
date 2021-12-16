@@ -18,6 +18,7 @@ class Day16
 
   def initialize(lines)
     raise StandardError, 'too many lines' if lines.count > 1
+
     @binary = lines[0].chars.map { |hex| hex.to_i(16) }.map { |num| num.to_s(2).rjust(4, '0') }.join
   end
 
@@ -31,11 +32,11 @@ class Day16
       # literal
       n = 0
       keep_reading = '1'
-      until keep_reading == '0' do
+      until keep_reading == '0'
         /^(?<keep_reading>[01])(?<bits>[01]{4})(?<so_far>.*)$/ =~ so_far
         n = n << 0x4 | bits.to_i(2)
       end
-      return [Node.new(ver, type, n), so_far]
+      [Node.new(ver, type, n), so_far]
     else
       # operator
       length_type_id = so_far[0]
@@ -48,17 +49,17 @@ class Day16
           parsed, so_far = parse(so_far)
           parsed
         end
-        return [Node.new(ver, type, children), so_far]
+        [Node.new(ver, type, children), so_far]
       when '0'
         length = so_far[0, 15].to_i(2)
         substr = so_far[15, length]
-        so_far = so_far[(15+length)..]
+        so_far = so_far[(15 + length)..]
         children = []
-        until substr =~ /^0*$/ do
+        until substr =~ /^0*$/
           tree, substr = parse(substr)
           children << tree
         end
-        return [Node.new(ver, type, children), so_far]
+        [Node.new(ver, type, children), so_far]
       end
     end
   end
@@ -99,11 +100,14 @@ class Day16
     private
 
     def initialize(ver, type, children)
-      @ver, @type, @children = ver, type, children
+      @ver = ver
+      @type = type
+      @children = children
     end
 
     def evaluate_pair!
       raise StandardError if children.length != 2
+
       children.map(&:evaluate)
     end
   end
@@ -111,6 +115,7 @@ class Day16
   def self.valid_tree!(arr)
     tree, trailer = arr
     raise StandardError, trailer unless /^0*$/ =~ trailer
+
     tree
   end
 end
