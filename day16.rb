@@ -10,6 +10,8 @@ class Day16
   end
 
   def part2
+    tree = Day16.valid_tree!(Day16.parse(binary))
+    Day16.evaluate(tree)
   end
 
   private
@@ -64,8 +66,7 @@ class Day16
   end
 
   def self.sum_versions(tree)
-    ver = tree[0]
-    type = tree[1]
+    ver, type = tree[0], tree[1]
     children = tree[2..]
     type == 4 ? ver : ver + children.map(&method(:sum_versions)).sum
   end
@@ -75,21 +76,55 @@ class Day16
     raise StandardError, trailer unless /^0*$/ =~ trailer
     tree
   end
-end
 
-def test(name, input, expected_output)
-  actual_output = Day16.new([input].freeze).part1
-
-  if actual_output != expected_output
-    raise StandardError, "#{name}: #{actual_output || 'nil'} != #{expected_output} (in: #{input})"
+  def self.evaluate(tree)
+    ver, type = tree[0], tree[1]
+    children = tree[2..]
+    case type
+    when 0
+      children.map(&method(:evaluate)).sum
+    when 1
+      children.map(&method(:evaluate)).reduce(&:*)
+    when 2
+      children.map(&method(:evaluate)).min
+    when 3
+      children.map(&method(:evaluate)).max
+    when 4
+      children[0]
+    when 5
+      evaluate(children[0]) > evaluate(children[1]) ? 1 : 0
+    when 6
+      evaluate(children[0]) < evaluate(children[1]) ? 1 : 0
+    when 7
+      evaluate(children[0]) == evaluate(children[1]) ? 1 : 0
+    else
+      raise NotImplementedError, "type #{type}"
+    end
   end
 end
 
-test 's', 'D2FE28', 6
-test 'ex1', '8A004A801A8002F478', 16
-test 'ex2', '620080001611562C8802118E34', 12
-test 'ex3', 'C0015000016115A2E0802F182340', 23
-test 'ex4', 'A0016C880162017C3686B18A3D4780', 31
+def test(msg, input, expected_output)
+  actual_output = Day16.new([input].freeze).send(msg)
+
+  if actual_output != expected_output
+    raise StandardError, "#{msg}: #{actual_output || 'nil'} != #{expected_output} (in: #{input})"
+  end
+end
+
+test :part1, 'D2FE28', 6
+test :part1, '8A004A801A8002F478', 16
+test :part1, '620080001611562C8802118E34', 12
+test :part1, 'C0015000016115A2E0802F182340', 23
+test :part1, 'A0016C880162017C3686B18A3D4780', 31
+
+test :part2, 'C200B40A82', 3
+test :part2, '04005AC33890', 54
+test :part2, '880086C3E88112', 7
+test :part2, 'CE00C43D881120', 9
+test :part2, 'D8005AC2A8F0', 1
+test :part2, 'F600BC2D8F', 0
+test :part2, '9C005AC2F8F0', 0
+test :part2, '9C0141080250320F1802104A08', 1
 
 day16 = Day16.new(ARGF.map(&:chomp).freeze)
 p part1: day16.part1
