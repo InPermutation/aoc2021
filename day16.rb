@@ -2,16 +2,14 @@
 # frozen_string_literal: true
 
 class Day16
-  Node = Struct.new(:ver, :type, :children)
-
   def part1
     tree = Day16.valid_tree!(Day16.parse(binary))
-    Day16.sum_versions(tree)
+    tree.sum_versions
   end
 
   def part2
     tree = Day16.valid_tree!(Day16.parse(binary))
-    Day16.evaluate(tree)
+    tree.evaluate
   end
 
   private
@@ -37,7 +35,7 @@ class Day16
         /^(?<keep_reading>[01])(?<bits>[01]{4})(?<so_far>.*)$/ =~ so_far
         n = n << 0x4 | bits.to_i(2)
       end
-      return [[ver, type, n], so_far]
+      return [Node.new(ver, type, n), so_far]
     else
       # operator
       length_type_id = so_far[0]
@@ -50,7 +48,7 @@ class Day16
           parsed, so_far = parse(so_far)
           parsed
         end
-        return [[ver, type, *children], so_far]
+        return [Node.new(ver, type, children), so_far]
       when '0'
         length = so_far[0, 15].to_i(2)
         substr = so_far[15, length]
@@ -60,46 +58,60 @@ class Day16
           tree, substr = parse(substr)
           children << tree
         end
-        return [[ver, type, *children], so_far]
+        return [Node.new(ver, type, children), so_far]
       end
     end
   end
 
-  def self.sum_versions(tree)
-    ver, type = tree[0], tree[1]
-    children = tree[2..]
-    type == 4 ? ver : ver + children.map(&method(:sum_versions)).sum
+  class Node
+    attr_reader :ver, :type, :children
+
+    def sum_versions
+      type == 4 ? ver : ver + children.map(&:sum_versions).sum
+    end
+
+    def evaluate
+      case type
+      when 0
+        children.map(&:evaluate).sum
+      when 1
+        children.map(&:evaluate).reduce(&:*)
+      when 2
+        children.map(&:evaluate).min
+      when 3
+        children.map(&:evaluate).max
+      when 4
+        children
+      when 5
+        a, b = evaluate_pair!
+        a > b ? 1 : 0
+      when 6
+        a, b = evaluate_pair!
+        a < b ? 1 : 0
+      when 7
+        a, b = evaluate_pair!
+        a == b ? 1 : 0
+      else
+        raise NotImplementedError, "type #{type}"
+      end
+    end
+
+    private
+
+    def initialize(ver, type, children)
+      @ver, @type, @children = ver, type, children
+    end
+
+    def evaluate_pair!
+      raise StandardError if children.length != 2
+      children.map(&:evaluate)
+    end
   end
 
   def self.valid_tree!(arr)
     tree, trailer = arr
     raise StandardError, trailer unless /^0*$/ =~ trailer
     tree
-  end
-
-  def self.evaluate(tree)
-    ver, type = tree[0], tree[1]
-    children = tree[2..]
-    case type
-    when 0
-      children.map(&method(:evaluate)).sum
-    when 1
-      children.map(&method(:evaluate)).reduce(&:*)
-    when 2
-      children.map(&method(:evaluate)).min
-    when 3
-      children.map(&method(:evaluate)).max
-    when 4
-      children[0]
-    when 5
-      evaluate(children[0]) > evaluate(children[1]) ? 1 : 0
-    when 6
-      evaluate(children[0]) < evaluate(children[1]) ? 1 : 0
-    when 7
-      evaluate(children[0]) == evaluate(children[1]) ? 1 : 0
-    else
-      raise NotImplementedError, "type #{type}"
-    end
   end
 end
 
