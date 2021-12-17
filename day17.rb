@@ -1,8 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require 'io/console'
-
 class Day17
   def part1
     hits.map(&:max_y).max
