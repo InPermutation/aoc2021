@@ -19,14 +19,11 @@ class Day17
   Target = Struct.new(:x, :y)
 
   def hits
-    res = []
-    (target.y.min..1000).each do |vyi| # TODO: is 1000 correct?
-      (0..target.x.max).each do |vxi|
-        probe = Probe.new(vxi, vyi)
-        res << probe if ever_hits?(probe)
-      end
+    @hits ||= (target.y.min..1000).flat_map do |vyi| # TODO: is 1000 correct?
+      (0..target.x.max)
+        .map { |vxi| Probe.new(vxi, vyi) }
+        .select { |probe| ever_hits?(probe) }
     end
-    res
   end
 
   def ever_hits?(probe)
