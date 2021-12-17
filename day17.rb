@@ -64,8 +64,8 @@ class Day17
     end
 
     def missed
-      return true if y < target.y.min && vx.negative?
-      return true if x > target.x.max
+      return true if y < target.y.min && vy.negative?
+      return true if x > target.x.max && !vx.negative?
       return false unless vx.zero?
       return true if x < target.x.min
       return false unless vy.negative?
