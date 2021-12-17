@@ -64,13 +64,19 @@ class Day17
     end
 
     def missed
-      return true if y < target.y.min && vy.negative?
-      return true if x > target.x.max && !vx.negative?
-      return false unless vx.zero?
-      return true if x < target.x.min
-      return false unless vy.negative?
+      falling_below? || too_right? || stopped_short?
+    end
 
-      y < target.y.min
+    def falling_below?
+      y < target.y.min && vy.negative?
+    end
+
+    def too_right?
+      x > target.x.max && !vx.negative?
+    end
+
+    def stopped_short?
+      x < target.x.min && !vx.positive?
     end
 
     def initialize(vxi, vyi, target)
