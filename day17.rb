@@ -17,11 +17,22 @@ class Day17
   Target = Struct.new(:x, :y)
 
   def hits
-    @hits ||= (target.y.min..1000).flat_map do |vyi| # TODO: is 1000 correct?
-      (0..target.x.max)
-        .map { |vxi| Probe.new(vxi, vyi, target).play_out! }
-        .select(&:hit?)
-    end
+    raise NotImplementedError, 'ymin+' unless target.y.min.negative?
+    raise NotImplementedError, 'ymax+' unless target.y.max.negative?
+    # For targets completely below the screen,
+    # the probe will always pass y=0 a second time.
+    # When it does, it will have vy = -vyi.
+    # All probes with vyi > the distance to the bottom of the target
+    # are guaranteed not to intersect the target, because the first
+    # negative y will be below the bottom of the target.
+    max_vyi = -target.y.min + 1
+    min_vyi = target.y.min
+    @hits ||= (min_vyi..max_vyi)
+      .flat_map do |vyi|
+        probes = (0..target.x.max)
+          .map { |vxi| Probe.new(vxi, vyi, target).play_out! }
+          .select(&:hit?)
+      end
   end
 
   class Probe
