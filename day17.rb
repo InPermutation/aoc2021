@@ -21,36 +21,30 @@ class Day17
   def hits
     @hits ||= (target.y.min..1000).flat_map do |vyi| # TODO: is 1000 correct?
       (0..target.x.max)
-        .map { |vxi| Probe.new(vxi, vyi) }
-        .select { |probe| ever_hits?(probe) }
+        .map { |vxi| Probe.new(vxi, vyi, target) }
+        .select(&:ever_hits?)
     end
-  end
-
-  def ever_hits?(probe)
-    loop do
-      return true if hit(probe)
-      return false if missed(probe)
-
-      probe.step!
-    end
-  end
-
-  def hit(probe)
-    target.x.include?(probe.x) && target.y.include?(probe.y)
-  end
-
-  def missed(probe)
-    return true if probe.y < target.y.min && probe.vx.negative?
-    return true if probe.x > target.x.max
-    return false unless probe.vx.zero?
-    return true if probe.x < target.x.min
-    return false unless probe.vy.negative?
-
-    probe.y < target.y.min
   end
 
   class Probe
-    attr_reader :x, :y, :vx, :vy, :max_y
+    attr_reader :x, :y, :vx, :vy, :max_y, :target
+
+    def inspect
+      "Probe<pos=(#{x}, #{y}) vel=(#{vx}, #{vy}) max_y=#{max_y}>"
+    end
+
+    def ever_hits?
+      loop do
+        return true if hit
+        return false if missed
+
+        step!
+      end
+    end
+
+    alias to_s inspect
+
+    private
 
     def step!
       @x += vx
@@ -65,18 +59,25 @@ class Day17
       self
     end
 
-    def inspect
-      "Probe<pos=(#{x}, #{y}) vel=(#{vx}, #{vy}) max_y=#{max_y}>"
+    def hit
+      target.x.include?(x) && target.y.include?(y)
     end
 
-    alias to_s inspect
+    def missed
+      return true if y < target.y.min && vx.negative?
+      return true if x > target.x.max
+      return false unless vx.zero?
+      return true if x < target.x.min
+      return false unless vy.negative?
 
-    private
+      y < target.y.min
+    end
 
-    def initialize(vxi, vyi)
+    def initialize(vxi, vyi, target)
       @x = @y = @max_y = 0
       @vx = vxi
       @vy = vyi
+      @target = target
     end
   end
 
@@ -87,7 +88,7 @@ class Day17
                      .delete_prefix('target area: ')
                      .split(', ')
                      .map { |boundstr| boundstr.split('=')[1].split('..').map(&:to_i) }
-                     .map { |min, max| Range.new(min, max) }
+                     .map { |min, max| Range.new(min, max).freeze }
     @target = Target.new(xrange, yrange)
   end
 end
