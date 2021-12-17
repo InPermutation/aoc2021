@@ -32,12 +32,8 @@ class Day17
     end
 
     def ever_hits?
-      loop do
-        return true if hit
-        return false if missed
-
-        step!
-      end
+      step! until hit || missed
+      hit
     end
 
     alias to_s inspect
