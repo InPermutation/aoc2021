@@ -9,6 +9,7 @@ class Day17
   end
 
   def part2
+    hits.length
   end
 
   private
