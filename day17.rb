@@ -19,8 +19,8 @@ class Day17
   def hits
     @hits ||= (target.y.min..1000).flat_map do |vyi| # TODO: is 1000 correct?
       (0..target.x.max)
-        .map { |vxi| Probe.new(vxi, vyi, target) }
-        .select(&:ever_hits?)
+        .map { |vxi| Probe.new(vxi, vyi, target).play_out! }
+        .select(&:hit?)
     end
   end
 
@@ -31,14 +31,12 @@ class Day17
       "Probe<pos=(#{x}, #{y}) vel=(#{vx}, #{vy}) max_y=#{max_y}>"
     end
 
-    def ever_hits?
-      step! until hit || missed
-      hit
+    def play_out!
+      step! until hit? || missed?
+      self
     end
 
     alias to_s inspect
-
-    private
 
     def step!
       @x += vx
@@ -50,14 +48,13 @@ class Day17
         @vx += 1
       end
       @vy -= 1
-      self
     end
 
-    def hit
+    def hit?
       target.x.include?(x) && target.y.include?(y)
     end
 
-    def missed
+    def missed?
       falling_below? || too_right? || stopped_short?
     end
 
@@ -72,6 +69,8 @@ class Day17
     def stopped_short?
       x < target.x.min && !vx.positive?
     end
+
+    private
 
     def initialize(vxi, vyi, target)
       @x = @y = @max_y = 0
