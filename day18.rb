@@ -189,6 +189,7 @@ class Day18
     @lines = lines
   end
 end
+TreeNode = Day18::TreeNode
 
 class AssertionError < StandardError; end
 
@@ -199,14 +200,14 @@ def assert(msg = 'Assertion failed')
 end
 
 def assert_equal(expected, actual)
-  expected = Day18::TreeNode.from_array(expected)
+  expected = TreeNode.from_array(expected)
   assert("\nExpect #{expected.inspect}\nActual #{actual.inspect}") { expected.eql? actual }
 end
 
-assert_equal [1, 2], Day18::TreeNode.from_array([1, 2])
-assert("Identity equals") { Day18::TreeNode.from_array([1, 2]) !=
-                            Day18::TreeNode.from_array([1, 2]) }
-assert_equal [[1, 2], [[3, 4], 5]], Day18::TreeNode.from_array([1, 2]) + Day18::TreeNode.from_array([[3, 4], 5])
+assert_equal [1, 2], TreeNode.from_array([1, 2])
+assert("Identity equals") { TreeNode.from_array([1, 2]) !=
+                            TreeNode.from_array([1, 2]) }
+assert_equal [[1, 2], [[3, 4], 5]], TreeNode.from_array([1, 2]) + TreeNode.from_array([[3, 4], 5])
 assert_equal [[[[1, 1], [2, 2]], [3, 3]], [4, 4]], Day18.add_all(
   [
     [1, 1],
