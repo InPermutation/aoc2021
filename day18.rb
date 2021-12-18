@@ -29,9 +29,6 @@ class Day18
   end
 
   def self.add(left, right)
-    raise AssertionError, "left #{left}" if left&.length != 2
-    raise AssertionError, "right #{right}" if right&.length != 2
-
     [left, right].freeze
   end
 
@@ -46,7 +43,16 @@ class Day18
   end
 
   def self.split_once(number)
-    number # TODO
+    case number
+    in [l, r]
+      lp = split_once(l)
+      return add(lp, r) if lp != l
+      rp = split_once(r)
+      return add(l, rp) if rp != r
+    else
+      return split(number) if number >= 10
+    end
+    number
   end
 
   def self.explode_once(number)
