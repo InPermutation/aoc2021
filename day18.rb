@@ -36,7 +36,7 @@ class Day18
       raise StandardError, "has parent: #{inspect}" unless parent.nil?
       raise StandardError, "has parent: #{right.inspect}" unless right.parent.nil?
 
-      self.parent = right.parent = TreeNode.new(self, right, nil).tap { |tn| tn.reduce! }
+      self.parent = right.parent = TreeNode.new(self, right, nil)
     end
 
     def split!
@@ -121,7 +121,6 @@ class Day18
       @left = left
       @right = right
       @parent = parent
-      yield self if block_given?
     end
   end
 
