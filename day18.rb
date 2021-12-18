@@ -131,7 +131,10 @@ class Day18
     Day18.final_sum(arr).magnitude
   end
 
-  def part2; end
+  def part2
+    arr = lines.map { |line| eval(line) } # DIRRRTY eval
+    Day18.maximum_pair_sum(arr)
+  end
 
   def self.add(left, right)
     TreeNode.add(
@@ -168,6 +171,20 @@ class Day18
         tn.reduce!
         tn
       }
+  end
+
+  def self.maximum_pair_sum(arr)
+    mx = arr
+      .permutation(2)
+      .map { |l, r|
+        l = TreeNode.from_array(l)
+        r = TreeNode.from_array(r)
+        s = TreeNode.add(l, r)
+        s.reduce!
+        s.magnitude
+      }
+      .max
+    TreeNode.new(mx, nil, nil)
   end
 
   private
@@ -293,6 +310,13 @@ example_assignment = [
 fsum = [[[[6, 6], [7, 6]], [[7, 7], [7, 0]]], [[[7, 7], [7, 7]], [[7, 8], [9, 9]]]]
 assert_equal fsum, Day18.final_sum(example_assignment)
 assert_equal 4140, Day18.magnitude(fsum)
+
+assert_equal [[[[7,8],[6,6]],[[6,0],[7,7]]],[[[7,8],[8,8]],[[7,9],[0,6]]]], Day18.final_sum([
+    [[2, [[7, 7], 7]], [[5, 8], [[9, 3], [0, 2]]]],
+    [[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]
+])
+assert_equal 3993, Day18.magnitude([[[[7,8],[6,6]],[[6,0],[7,7]]],[[[7,8],[8,8]],[[7,9],[0,6]]]])
+assert_equal 3993, Day18.maximum_pair_sum(example_assignment)
 
 puts "\nTests passed"
 
