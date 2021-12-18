@@ -1,131 +1,132 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-class TreeNode
-  attr_accessor :left, :right, :parent
-
-  def ==(other)
-    return false if other.class != TreeNode
-    return false if leaf? != other.leaf?
-
-    left == other.left && right == other.right
-  end
-
-  def inspect
-    return "#{left.inspect}" if leaf?
-
-    "[#{left.inspect},#{right.inspect}]"
-  end
-  alias to_s inspect
-
-  def leaf?
-    right.nil?
-  end
-
-  def self.from_array(value)
-    case value
-    in [l, r]
-      TreeNode.add(from_array(l), from_array(r))
-    else
-      TreeNode.new(value, nil, nil)
-    end
-  end
-
-  def self.add(left, right)
-    raise StandardError, "has parent: #{left.inspect}" unless left.parent.nil?
-    raise StandardError, "has parent: #{right.inspect}" unless right.parent.nil?
-
-    left.parent = right.parent = TreeNode.new(left, right, nil).tap { |tn| tn.reduce! }
-  end
-
-  def split!
-    return false unless leaf?
-    return false unless left >= 10
-
-    q, r = left.divmod(2)
-    self.left = TreeNode.new(q, nil, self)
-    self.right = TreeNode.new(q + r, nil, self)
-    true
-  end
-
-  def reduce!
-    loop do
-      next if explode_once!
-      next if split_once!
-      return
-    end
-  end
-
-  def split_once!
-    leaf_nodes.each do |node|
-      return true if node.split!
-    end
-    false
-  end
-
-  def explode_once!
-    explodable_nodes.take(1).each do |explod|
-      raise StandardError, explod.inspect unless explod.left.leaf? && explod.right.leaf?
-      lval, rval = explod.left.left, explod.right.left
-
-      lnodes = leaf_nodes
-      lix = lnodes.find_index { |n| n.object_id === explod.left.object_id }
-      raise StandardError, explod.inspect if lix.nil?
-      lnodes[lix - 1].left += lval if lix - 1 >= 0
-      lnodes[lix + 2].left += rval if lix + 2 < lnodes.length
-      explod.left = 0
-      explod.right = nil
-
-      return true
-    end
-    return false
-  end
-
-  def explodable_nodes
-    all_nodes.select(&:explodable?)
-  end
-
-  def explodable?
-    return false if leaf?
-    parent_depth == 4
-  end
-
-  def parent_depth
-    return 0 if parent.nil?
-    1 + parent.parent_depth
-  end
-
-  def all_nodes
-    return [self] if leaf?
-    [self] + left.all_nodes + right.all_nodes
-  end
-
-  def leaf_nodes
-    return [self] if leaf?
-
-    left.leaf_nodes + right.leaf_nodes
-  end
-
-  def magnitude
-    return left if leaf?
-
-    3 * left.magnitude + 2 * right.magnitude
-  end
-
-  private
-
-  def initialize(left, right, parent)
-    if right.nil?
-      raise StandardError, "not integer: #{left.inspect} (#{left.class})" unless left.class == Integer
-    end
-    @left = left
-    @right = right
-    @parent = parent
-    yield self if block_given?
-  end
-end
 
 class Day18
+  class TreeNode
+    attr_accessor :left, :right, :parent
+
+    def ==(other)
+      return false if other.class != TreeNode
+      return false if leaf? != other.leaf?
+
+      left == other.left && right == other.right
+    end
+
+    def inspect
+      return "#{left.inspect}" if leaf?
+
+      "[#{left.inspect},#{right.inspect}]"
+    end
+    alias to_s inspect
+
+    def leaf?
+      right.nil?
+    end
+
+    def self.from_array(value)
+      case value
+      in [l, r]
+        TreeNode.add(from_array(l), from_array(r))
+      else
+        TreeNode.new(value, nil, nil)
+      end
+    end
+
+    def self.add(left, right)
+      raise StandardError, "has parent: #{left.inspect}" unless left.parent.nil?
+      raise StandardError, "has parent: #{right.inspect}" unless right.parent.nil?
+
+      left.parent = right.parent = TreeNode.new(left, right, nil).tap { |tn| tn.reduce! }
+    end
+
+    def split!
+      return false unless leaf?
+      return false unless left >= 10
+
+      q, r = left.divmod(2)
+      self.left = TreeNode.new(q, nil, self)
+      self.right = TreeNode.new(q + r, nil, self)
+      true
+    end
+
+    def reduce!
+      loop do
+        next if explode_once!
+        next if split_once!
+        return
+      end
+    end
+
+    def split_once!
+      leaf_nodes.each do |node|
+        return true if node.split!
+      end
+      false
+    end
+
+    def explode_once!
+      explodable_nodes.take(1).each do |explod|
+        raise StandardError, explod.inspect unless explod.left.leaf? && explod.right.leaf?
+        lval, rval = explod.left.left, explod.right.left
+
+        lnodes = leaf_nodes
+        lix = lnodes.find_index { |n| n.object_id === explod.left.object_id }
+        raise StandardError, explod.inspect if lix.nil?
+        lnodes[lix - 1].left += lval if lix - 1 >= 0
+        lnodes[lix + 2].left += rval if lix + 2 < lnodes.length
+        explod.left = 0
+        explod.right = nil
+
+        return true
+      end
+      return false
+    end
+
+    def explodable_nodes
+      all_nodes.select(&:explodable?)
+    end
+
+    def explodable?
+      return false if leaf?
+      parent_depth == 4
+    end
+
+    def parent_depth
+      return 0 if parent.nil?
+      1 + parent.parent_depth
+    end
+
+    def all_nodes
+      return [self] if leaf?
+      [self] + left.all_nodes + right.all_nodes
+    end
+
+    def leaf_nodes
+      return [self] if leaf?
+
+      left.leaf_nodes + right.leaf_nodes
+    end
+
+    def magnitude
+      return left if leaf?
+
+      3 * left.magnitude + 2 * right.magnitude
+    end
+
+    private
+
+    def initialize(left, right, parent)
+      if right.nil?
+        raise StandardError, "not integer: #{left.inspect} (#{left.class})" unless left.class == Integer
+      end
+      @left = left
+      @right = right
+      @parent = parent
+      yield self if block_given?
+    end
+  end
+
   def part1
     arr = lines.map { |line| eval(line) } # DIRRRTY eval
     Day18.final_sum(arr).magnitude
@@ -205,13 +206,13 @@ def assert(msg = 'Assertion failed')
 end
 
 def assert_equal(expected, actual)
-  expected = TreeNode.from_array(expected)
+  expected = Day18::TreeNode.from_array(expected)
   assert("\nExpect #{expected.inspect}\nActual #{actual.inspect}") { expected == actual }
 end
 
-assert_equal [1, 2], TreeNode.from_array([1, 2])
-assert("Identity equals") { TreeNode.from_array([1, 2]).object_id !=
-                            TreeNode.from_array([1, 2]).object_id }
+assert_equal [1, 2], Day18::TreeNode.from_array([1, 2])
+assert("Identity equals") { Day18::TreeNode.from_array([1, 2]).object_id !=
+                            Day18::TreeNode.from_array([1, 2]).object_id }
 assert_equal [[1, 2], [[3, 4], 5]], Day18.add([1, 2], [[3, 4], 5])
 assert_equal [[[[1, 1], [2, 2]], [3, 3]], [4, 4]], Day18.add_all(
   [
