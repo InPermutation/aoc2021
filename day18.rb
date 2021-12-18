@@ -18,7 +18,6 @@ class Day18
 
       "[#{left.inspect},#{right.inspect}]"
     end
-    alias to_s inspect
 
     def leaf?
       right.nil?
