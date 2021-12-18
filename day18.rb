@@ -6,11 +6,11 @@ class Day18
   class TreeNode
     attr_accessor :left, :right, :parent
 
-    def ==(other)
+    def eql?(other)
       return false if other.class != TreeNode
-      return false if leaf? != other.leaf?
+      return other.leaf? && left == other.left if leaf?
 
-      left == other.left && right == other.right
+      left.eql?(other.left) && right.eql?(other.right)
     end
 
     def inspect
@@ -71,7 +71,7 @@ class Day18
         lval, rval = explod.left.left, explod.right.left
 
         lnodes = leaf_nodes
-        lix = lnodes.find_index { |n| n.object_id === explod.left.object_id }
+        lix = lnodes.find_index(explod.left)
         raise StandardError, explod.inspect if lix.nil?
         lnodes[lix - 1].left += lval if lix - 1 >= 0
         lnodes[lix + 2].left += rval if lix + 2 < lnodes.length
@@ -207,12 +207,12 @@ end
 
 def assert_equal(expected, actual)
   expected = Day18::TreeNode.from_array(expected)
-  assert("\nExpect #{expected.inspect}\nActual #{actual.inspect}") { expected == actual }
+  assert("\nExpect #{expected.inspect}\nActual #{actual.inspect}") { expected.eql? actual }
 end
 
 assert_equal [1, 2], Day18::TreeNode.from_array([1, 2])
-assert("Identity equals") { Day18::TreeNode.from_array([1, 2]).object_id !=
-                            Day18::TreeNode.from_array([1, 2]).object_id }
+assert("Identity equals") { Day18::TreeNode.from_array([1, 2]) !=
+                            Day18::TreeNode.from_array([1, 2]) }
 assert_equal [[1, 2], [[3, 4], 5]], Day18.add([1, 2], [[3, 4], 5])
 assert_equal [[[[1, 1], [2, 2]], [3, 3]], [4, 4]], Day18.add_all(
   [
