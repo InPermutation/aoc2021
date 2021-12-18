@@ -27,17 +27,17 @@ class Day18
     def self.from_array(value)
       case value
       in [l, r]
-        TreeNode.add(from_array(l), from_array(r))
+        from_array(l) + from_array(r)
       else
         TreeNode.new(value, nil, nil)
       end
     end
 
-    def self.add(left, right)
-      raise StandardError, "has parent: #{left.inspect}" unless left.parent.nil?
+    def +(right)
+      raise StandardError, "has parent: #{inspect}" unless parent.nil?
       raise StandardError, "has parent: #{right.inspect}" unless right.parent.nil?
 
-      left.parent = right.parent = TreeNode.new(left, right, nil).tap { |tn| tn.reduce! }
+      self.parent = right.parent = TreeNode.new(self, right, nil).tap { |tn| tn.reduce! }
     end
 
     def split!
@@ -138,14 +138,11 @@ class Day18
   end
 
   def self.add(left, right)
-    TreeNode.add(
-      TreeNode.from_array(left),
-      TreeNode.from_array(right)
-    )
+    TreeNode.from_array(left) + TreeNode.from_array(right)
   end
 
   def self.add_all(arr)
-    arr.map(&TreeNode.method(:from_array)).reduce(&TreeNode.method(:add))
+    arr.map(&TreeNode.method(:from_array)).reduce(&:+)
   end
 
   def self.split(num)
@@ -168,7 +165,7 @@ class Day18
     arr
       .map(&TreeNode.method(:from_array))
       .reduce { |prev, node|
-        tn = TreeNode.add(prev, node)
+        tn = prev + node
         tn.reduce!
         tn
       }
@@ -180,7 +177,7 @@ class Day18
       .map { |l, r|
         l = TreeNode.from_array(l)
         r = TreeNode.from_array(r)
-        s = TreeNode.add(l, r)
+        s = l + r
         s.reduce!
         s.magnitude
       }
