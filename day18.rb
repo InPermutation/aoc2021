@@ -134,26 +134,6 @@ class Day18
     Day18.maximum_pair_sum(arr)
   end
 
-  def self.add_all(arr)
-    arr.map(&TreeNode.method(:from_array)).reduce(&:+)
-  end
-
-  def self.split(num)
-    TreeNode.new(num, nil, nil).tap { |tn| tn.split! }
-  end
-
-  def self.split_once(arr)
-    add_all(arr).tap(&:split_once!)
-  end
-
-  def self.explode_once(arr)
-    add_all(arr).tap(&:explode_once!)
-  end
-
-  def self.magnitude(arr)
-    TreeNode.new(add_all(arr).magnitude, nil, nil)
-  end
-
   def self.final_sum(arr)
     arr
       .map(&TreeNode.method(:from_array))
@@ -198,6 +178,7 @@ end
 
 def assert_equal(expected, actual)
   expected = TreeNode.from_array(expected)
+  actual = TreeNode.from_array(actual) if actual.class == Integer || actual.class == Array
   assert("\nExpect #{expected.inspect}\nActual #{actual.inspect}") { expected.eql? actual }
 end
 
@@ -205,41 +186,40 @@ assert_equal [1, 2], TreeNode.from_array([1, 2])
 assert("Identity equals") { TreeNode.from_array([1, 2]) !=
                             TreeNode.from_array([1, 2]) }
 assert_equal [[1, 2], [[3, 4], 5]], TreeNode.from_array([1, 2]) + TreeNode.from_array([[3, 4], 5])
-assert_equal [[[[1, 1], [2, 2]], [3, 3]], [4, 4]], Day18.add_all(
-  [
+assert_equal [[[[1, 1], [2, 2]], [3, 3]], [4, 4]], [
     [1, 1],
     [2, 2],
     [3, 3],
     [4, 4]
-  ]
-)
-assert_equal 9, Day18.split(9)
-assert_equal [5, 5], Day18.split(10)
-assert_equal [5, 6], Day18.split(11)
-assert_equal [6, 6], Day18.split(12)
+].map(&TreeNode.method(:from_array)).reduce(&:+)
+assert_equal 9, TreeNode.from_array(9).tap(&:split!)
+assert_equal [5, 5], TreeNode.from_array(10).tap(&:split!)
+assert_equal [5, 6], TreeNode.from_array(11).tap(&:split!)
+assert_equal [6, 6], TreeNode.from_array(12).tap(&:split!)
 
-assert_equal [9, 3], Day18.split_once([9, 3]) # nothing over 10 -> don't split anything
-assert_equal [[5, 5], 3], Day18.split_once([10, 3])
-assert_equal [[5, 5], 11], Day18.split_once([10, 11]) # only split leftmost value
-assert_equal [[9, [5, 5]], 11], Day18.split_once([[9, 10], 11]) # only split leftmost value
+assert_equal [9, 3], TreeNode.from_array([9, 3]).tap(&:split_once!) # nothing over 10 -> don't split anything
+assert_equal [[5, 5], 3], TreeNode.from_array([10, 3]).tap(&:split_once!)
+assert_equal [[5, 5], 11], TreeNode.from_array([10, 11]).tap(&:split_once!) # only split leftmost value
+assert_equal [[9, [5, 5]], 11], TreeNode.from_array([[9, 10], 11]).tap(&:split_once!) # only split leftmost value
 
-assert_equal 29, Day18.magnitude([9, 1])
-assert_equal 21, Day18.magnitude([1, 9])
-assert_equal 129, Day18.magnitude([[9, 1], [1, 9]])
-assert_equal 143, Day18.magnitude([[1, 2], [[3, 4], 5]])
-assert_equal 1384, Day18.magnitude([[[[0, 7], 4], [[7, 8], [6, 0]]], [8, 1]])
-assert_equal 445, Day18.magnitude([[[[1, 1], [2, 2]], [3, 3]], [4, 4]])
-assert_equal 791, Day18.magnitude([[[[3, 0], [5, 3]], [4, 4]], [5, 5]])
-assert_equal 1137, Day18.magnitude([[[[5, 0], [7, 4]], [5, 5]], [6, 6]])
-assert_equal 3488, Day18.magnitude([[[[8, 7], [7, 7]], [[8, 6], [7, 7]]], [[[0, 7], [6, 6]], [8, 7]]])
+assert_equal 29, TreeNode.from_array([9, 1]).magnitude
+assert_equal 21, TreeNode.from_array([1, 9]).magnitude
+assert_equal 129, TreeNode.from_array([[9, 1], [1, 9]]).magnitude
+assert_equal 143, TreeNode.from_array([[1, 2], [[3, 4], 5]]).magnitude
+assert_equal 1384, TreeNode.from_array([[[[0, 7], 4], [[7, 8], [6, 0]]], [8, 1]]).magnitude
+assert_equal 445, TreeNode.from_array([[[[1, 1], [2, 2]], [3, 3]], [4, 4]]).magnitude
+assert_equal 791, TreeNode.from_array([[[[3, 0], [5, 3]], [4, 4]], [5, 5]]).magnitude
+assert_equal 1137, TreeNode.from_array([[[[5, 0], [7, 4]], [5, 5]], [6, 6]]).magnitude
+assert_equal 3488, TreeNode.from_array([[[[8, 7], [7, 7]], [[8, 6], [7, 7]]], [[[0, 7], [6, 6]], [8, 7]]]).magnitude
 
-assert_equal [5, [7, 2]], Day18.explode_once([5, [7, 2]]) # no explosion
-assert_equal [[[[0, 9], 2], 3], 4], Day18.explode_once([[[[[9, 8], 1], 2], 3], 4])
-assert_equal [7, [6, [5, [7, 0]]]], Day18.explode_once([7, [6, [5, [4, [3, 2]]]]])
-assert_equal [[6, [5, [7, 0]]], 3], Day18.explode_once([[6, [5, [4, [3, 2]]]], 1])
+assert_equal [5, [7, 2]], TreeNode.from_array([5, [7, 2]]).tap(&:explode_once!) # no explosion
+assert_equal [[[[0, 9], 2], 3], 4], TreeNode.from_array([[[[[9, 8], 1], 2], 3], 4]).tap(&:explode_once!)
+assert_equal [7, [6, [5, [7, 0]]]], TreeNode.from_array([7, [6, [5, [4, [3, 2]]]]]).tap(&:explode_once!)
+assert_equal [[6, [5, [7, 0]]], 3], TreeNode.from_array([[6, [5, [4, [3, 2]]]], 1]).tap(&:explode_once!)
 assert_equal [[3, [2, [8, 0]]], [9, [5, [4, [3, 2]]]]],
-             Day18.explode_once([[3, [2, [1, [7, 3]]]], [6, [5, [4, [3, 2]]]]])
-assert_equal [[3, [2, [8, 0]]], [9, [5, [7, 0]]]], Day18.explode_once([[3, [2, [8, 0]]], [9, [5, [4, [3, 2]]]]])
+             TreeNode.from_array([[3, [2, [1, [7, 3]]]], [6, [5, [4, [3, 2]]]]]).tap(&:explode_once!)
+assert_equal [[3, [2, [8, 0]]], [9, [5, [7, 0]]]],
+  TreeNode.from_array([[3, [2, [8, 0]]], [9, [5, [4, [3, 2]]]]]).tap(&:explode_once!)
 
 assert_equal [[[[1, 1], [2, 2]], [3, 3]], [4, 4]], Day18.final_sum(
   [
@@ -301,13 +281,13 @@ example_assignment = [
 ]
 fsum = [[[[6, 6], [7, 6]], [[7, 7], [7, 0]]], [[[7, 7], [7, 7]], [[7, 8], [9, 9]]]]
 assert_equal fsum, Day18.final_sum(example_assignment)
-assert_equal 4140, Day18.magnitude(fsum)
+assert_equal 4140, TreeNode.from_array(fsum).magnitude
 
 assert_equal [[[[7,8],[6,6]],[[6,0],[7,7]]],[[[7,8],[8,8]],[[7,9],[0,6]]]], Day18.final_sum([
     [[2, [[7, 7], 7]], [[5, 8], [[9, 3], [0, 2]]]],
     [[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]
 ])
-assert_equal 3993, Day18.magnitude([[[[7,8],[6,6]],[[6,0],[7,7]]],[[[7,8],[8,8]],[[7,9],[0,6]]]])
+assert_equal 3993, TreeNode.from_array([[[[7,8],[6,6]],[[6,0],[7,7]]],[[[7,8],[8,8]],[[7,9],[0,6]]]]).magnitude
 assert_equal 3993, Day18.maximum_pair_sum(example_assignment)
 
 puts "\nTests passed"
