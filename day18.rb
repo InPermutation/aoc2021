@@ -4,7 +4,8 @@
 
 class Day18
   class TreeNode
-    attr_accessor :left, :right, :parent
+    attr_accessor :left, :right
+    attr_reader :depth
 
     def eql?(other)
       return false if other.class != TreeNode
@@ -28,15 +29,20 @@ class Day18
       in [l, r]
         from_array(l) + from_array(r)
       else
-        TreeNode.new(value, nil, nil)
+        TreeNode.new(value, nil, 0)
       end
     end
 
     def +(right)
-      raise StandardError, "has parent: #{inspect}" unless parent.nil?
-      raise StandardError, "has parent: #{right.inspect}" unless right.parent.nil?
+      raise StandardError, "has parent: #{inspect}" unless depth == 0
+      raise StandardError, "has parent: #{right.inspect}" unless depth == 0
 
-      self.parent = right.parent = TreeNode.new(self, right, nil)
+      TreeNode.new(self.with_incr_parent, right.with_incr_parent, 0)
+    end
+
+    def with_incr_parent
+      return TreeNode.new(left, nil, depth + 1) if leaf?
+      TreeNode.new(left.with_incr_parent, right.with_incr_parent, depth + 1)
     end
 
     def split!
@@ -44,8 +50,8 @@ class Day18
       return false unless left >= 10
 
       q, r = left.divmod(2)
-      self.left = TreeNode.new(q, nil, self)
-      self.right = TreeNode.new(q + r, nil, self)
+      self.left = TreeNode.new(q, nil, depth + 1)
+      self.right = TreeNode.new(q + r, nil, depth + 1)
       true
     end
 
@@ -87,12 +93,7 @@ class Day18
     end
 
     def explodable?
-      !leaf? && parent_depth == 4
-    end
-
-    def parent_depth
-      return 0 if parent.nil?
-      1 + parent.parent_depth
+      !leaf? && depth == 4
     end
 
     def all_nodes
@@ -114,13 +115,14 @@ class Day18
 
     private
 
-    def initialize(left, right, parent)
+    def initialize(left, right, depth)
       if right.nil?
         raise StandardError, "not integer: #{left.inspect} (#{left.class})" unless left.class == Integer
       end
+      raise TypeError, "depth: #{depth} #{depth.class}" unless depth.class == Integer
       @left = left
       @right = right
-      @parent = parent
+      @depth = depth
     end
   end
 
@@ -145,7 +147,7 @@ class Day18
   end
 
   def self.maximum_pair_sum(arr)
-    mx = arr
+    arr
       .permutation(2)
       .map { |l, r|
         l = TreeNode.from_array(l)
@@ -155,7 +157,6 @@ class Day18
         s.magnitude
       }
       .max
-    TreeNode.new(mx, nil, nil)
   end
 
   private
