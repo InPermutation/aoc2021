@@ -88,8 +88,7 @@ class Day18
     end
 
     def explodable?
-      return false if leaf?
-      parent_depth == 4
+      !leaf? && parent_depth == 4
     end
 
     def parent_depth
