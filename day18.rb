@@ -137,10 +137,6 @@ class Day18
     Day18.maximum_pair_sum(arr)
   end
 
-  def self.add(left, right)
-    TreeNode.from_array(left) + TreeNode.from_array(right)
-  end
-
   def self.add_all(arr)
     arr.map(&TreeNode.method(:from_array)).reduce(&:+)
   end
@@ -210,7 +206,7 @@ end
 assert_equal [1, 2], Day18::TreeNode.from_array([1, 2])
 assert("Identity equals") { Day18::TreeNode.from_array([1, 2]) !=
                             Day18::TreeNode.from_array([1, 2]) }
-assert_equal [[1, 2], [[3, 4], 5]], Day18.add([1, 2], [[3, 4], 5])
+assert_equal [[1, 2], [[3, 4], 5]], Day18::TreeNode.from_array([1, 2]) + Day18::TreeNode.from_array([[3, 4], 5])
 assert_equal [[[[1, 1], [2, 2]], [3, 3]], [4, 4]], Day18.add_all(
   [
     [1, 1],
