@@ -1,73 +1,173 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-class Day18
-  def part1
-    magnitude(
-      final_sum(
-        add_all(
-          lines.map(&Day18.method(:parse))
-        )
-      )
-    )
+class TreeNode
+  attr_accessor :left, :right, :parent
+
+  def ==(other)
+    return false if other.class != TreeNode
+    return false if leaf? != other.leaf?
+
+    left == other.left && right == other.right
   end
 
-  def part2; end
+  def inspect
+    return "#{left.inspect}" if leaf?
 
-  def self.final_sum(numbers)
-    loop do
-      exploded = explode_once(numbers)
-      if exploded == numbers
-        split = split_once(numbers)
-        return numbers if split == numbers
+    "[#{left.inspect},#{right.inspect}]"
+  end
+  alias to_s inspect
 
-        numbers = split
-      else
-        numbers = exploded
-      end
+  def leaf?
+    right.nil?
+  end
+
+  def self.from_array(value)
+    case value
+    in [l, r]
+      TreeNode.add(from_array(l), from_array(r))
+    else
+      TreeNode.new(value, nil, nil)
     end
   end
 
   def self.add(left, right)
-    [left, right].freeze
+    raise StandardError, "has parent: #{left.inspect}" unless left.parent.nil?
+    raise StandardError, "has parent: #{right.inspect}" unless right.parent.nil?
+
+    left.parent = right.parent = TreeNode.new(left, right, nil).tap { |tn| tn.reduce! }
   end
 
-  def self.add_all(numbers)
-    numbers.reduce { |left, right| final_sum(add(left, right)) }
+  def split!
+    return false unless leaf?
+    return false unless left >= 10
+
+    q, r = left.divmod(2)
+    self.left = TreeNode.new(q, nil, self)
+    self.right = TreeNode.new(q + r, nil, self)
+    true
   end
 
-  def self.split(regular_number)
-    half = regular_number / 2
-    rem = regular_number % 2
-    [half, half + (rem.positive? ? 1 : 0)]
-  end
-
-  def self.split_once(number)
-    case number
-    in [l, r]
-      lp = split_once(l)
-      return add(lp, r) if lp != l
-      rp = split_once(r)
-      return add(l, rp) if rp != r
-    else
-      return split(number) if number >= 10
+  def reduce!
+    loop do
+      next if explode_once!
+      next if split_once!
+      return
     end
-    number
   end
 
-  def self.explode_once(number)
-    number # TODO
-  end
-
-  def self.magnitude(sum)
-    case sum
-    in [], [_single], [_l, _r, *_rest]
-      raise AssertionError, "not a pair #{sum}"
-    in [l, r]
-      3 * magnitude(l) + 2 * magnitude(r)
-    else
-      sum
+  def split_once!
+    leaf_nodes.each do |node|
+      return true if node.split!
     end
+    false
+  end
+
+  def explode_once!
+    explodable_nodes.take(1).each do |explod|
+      raise StandardError, explod.inspect unless explod.left.leaf? && explod.right.leaf?
+      lval, rval = explod.left.left, explod.right.left
+
+      lnodes = leaf_nodes
+      lix = lnodes.find_index { |n| n.object_id === explod.left.object_id }
+      raise StandardError, explod.inspect if lix.nil?
+      lnodes[lix - 1].left += lval if lix - 1 >= 0
+      lnodes[lix + 2].left += rval if lix + 2 < lnodes.length
+      explod.left = 0
+      explod.right = nil
+
+      return true
+    end
+    return false
+  end
+
+  def explodable_nodes
+    all_nodes.select(&:explodable?)
+  end
+
+  def explodable?
+    return false if leaf?
+    parent_depth == 4
+  end
+
+  def parent_depth
+    return 0 if parent.nil?
+    1 + parent.parent_depth
+  end
+
+  def all_nodes
+    return [self] if leaf?
+    [self] + left.all_nodes + right.all_nodes
+  end
+
+  def leaf_nodes
+    return [self] if leaf?
+
+    left.leaf_nodes + right.leaf_nodes
+  end
+
+  def magnitude
+    return left if leaf?
+
+    3 * left.magnitude + 2 * right.magnitude
+  end
+
+  private
+
+  def initialize(left, right, parent)
+    if right.nil?
+      raise StandardError, "not integer: #{left.inspect} (#{left.class})" unless left.class == Integer
+    end
+    @left = left
+    @right = right
+    @parent = parent
+    yield self if block_given?
+  end
+end
+
+class Day18
+  def part1
+    arr = lines.map { |line| eval(line) } # DIRRRTY eval
+    Day18.final_sum(arr).magnitude
+  end
+
+  def part2; end
+
+  def self.add(left, right)
+    TreeNode.add(
+      TreeNode.from_array(left),
+      TreeNode.from_array(right)
+    )
+  end
+
+  def self.add_all(arr)
+    arr.map(&TreeNode.method(:from_array)).reduce(&TreeNode.method(:add))
+  end
+
+  def self.split(num)
+    TreeNode.new(num, nil, nil).tap { |tn| tn.split! }
+  end
+
+  def self.split_once(arr)
+    add_all(arr).tap(&:split_once!)
+  end
+
+  def self.explode_once(arr)
+    add_all(arr).tap(&:explode_once!)
+  end
+
+  def self.magnitude(arr)
+    TreeNode.new(add_all(arr).magnitude, nil, nil)
+  end
+
+  def self.final_sum(arr)
+    arr
+      .map(&TreeNode.method(:from_array))
+      .reduce { |prev, node|
+        tn = TreeNode.add(prev, node)
+        tn.reduce!
+        tn
+      }
   end
 
   private
@@ -88,11 +188,13 @@ def assert(msg = 'Assertion failed')
 end
 
 def assert_equal(expected, actual)
+  expected = TreeNode.from_array(expected)
   assert("\nExpect #{expected.inspect}\nActual #{actual.inspect}") { expected == actual }
 end
 
-assert_equal [[1, 2], [[3, 4], 5]], Day18.add([1, 2], [[3, 4], 5])
-assert_equal [[1, 2], [[3, 4], 5]], Day18.add([1, 2], [[3, 4], 5])
+assert_equal [1, 2], TreeNode.from_array([1, 2])
+assert("Identity equals") { TreeNode.from_array([1, 2]).object_id !=
+                            TreeNode.from_array([1, 2]).object_id }
 assert_equal [[1, 2], [[3, 4], 5]], Day18.add([1, 2], [[3, 4], 5])
 assert_equal [[[[1, 1], [2, 2]], [3, 3]], [4, 4]], Day18.add_all(
   [
@@ -102,13 +204,15 @@ assert_equal [[[[1, 1], [2, 2]], [3, 3]], [4, 4]], Day18.add_all(
     [4, 4]
   ]
 )
+assert_equal 9, Day18.split(9)
 assert_equal [5, 5], Day18.split(10)
 assert_equal [5, 6], Day18.split(11)
 assert_equal [6, 6], Day18.split(12)
 
-assert_equal [9, 3], Day18.split_once([9, 3]) # no split
+assert_equal [9, 3], Day18.split_once([9, 3]) # nothing over 10 -> don't split anything
 assert_equal [[5, 5], 3], Day18.split_once([10, 3])
-assert_equal [[5, 5], 11], Day18.split_once([10, 11])
+assert_equal [[5, 5], 11], Day18.split_once([10, 11]) # only split leftmost value
+assert_equal [[9, [5, 5]], 11], Day18.split_once([[9, 10], 11]) # only split leftmost value
 
 assert_equal 29, Day18.magnitude([9, 1])
 assert_equal 21, Day18.magnitude([1, 9])
@@ -134,6 +238,43 @@ assert_equal [[[[1, 1], [2, 2]], [3, 3]], [4, 4]], Day18.final_sum(
     [2, 2],
     [3, 3],
     [4, 4]
+  ]
+)
+
+assert_equal [[[[3,0],[5,3]],[4,4]],[5,5]], Day18.final_sum(
+  [
+    [1,1],
+    [2,2],
+    [3,3],
+    [4,4],
+    [5,5]
+  ]
+)
+
+assert_equal [[[[5,0],[7,4]],[5,5]],[6,6]], Day18.final_sum(
+  [
+    [1,1],
+    [2,2],
+    [3,3],
+    [4,4],
+    [5,5],
+    [6,6]
+  ]
+)
+
+
+assert_equal [[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]], Day18.final_sum(
+  [
+    [[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]],
+    [7,[[[3,7],[4,3]],[[6,3],[8,8]]]],
+    [[2,[[0,8],[3,4]]],[[[6,7],1],[7,[1,6]]]],
+    [[[[2,4],7],[6,[0,5]]],[[[6,8],[2,8]],[[2,1],[4,5]]]],
+    [7,[5,[[3,8],[1,4]]]],
+    [[2,[2,2]],[8,[8,1]]],
+    [2,9],
+    [1,[[[9,3],9],[[9,0],[0,7]]]],
+    [[[5,[7,4]],7],1],
+    [[[[4,2],2],6],[8,7]]
   ]
 )
 
