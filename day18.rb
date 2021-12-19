@@ -15,7 +15,7 @@ class Day18
     end
 
     def inspect
-      return "#{left.inspect}" if leaf?
+      return left.inspect if leaf?
 
       "[#{left.inspect},#{right.inspect}]"
     end
@@ -27,6 +27,7 @@ class Day18
     def self.from_array(value)
       case value
       in [l, r]
+        # + will set depth correctly
         from_array(l) + from_array(r)
       else
         TreeNode.new(value, nil, 0)
