@@ -104,8 +104,7 @@ class Day18
     end
 
     def all_nodes
-      # TODO: this is in the wrong order...
-      [self] + left.all_nodes + right.all_nodes
+      left.all_nodes + [self] + right.all_nodes
     end
 
     def leaf_nodes
