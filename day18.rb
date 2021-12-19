@@ -3,24 +3,30 @@
 
 
 class Day18
-  class TreeNode
-    attr_reader :left, :right, :depth
+  class TreeBase
+    attr_reader :depth
+
+    def +(right)
+      raise StandardError, "has parent: #{inspect}" unless depth.zero?
+      raise StandardError, "has parent: #{right.inspect}" unless right.depth.zero?
+
+      TreeNode.new(self.with_incr_parent, right.with_incr_parent, 0)
+    end
+  end
+
+  class TreeNode < TreeBase
+    attr_reader :left, :right
 
     def eql?(other)
-      return false if other.class != TreeNode
-      return other.leaf? && left == other.left if leaf?
-
-      left.eql?(other.left) && right.eql?(other.right)
+      !other.leaf? && left.eql?(other.left) && right.eql?(other.right)
     end
 
     def inspect
-      return left.inspect if leaf?
-
       "[#{left.inspect},#{right.inspect}]"
     end
 
     def leaf?
-      right.nil?
+      false
     end
 
     def self.from_array(value)
@@ -29,30 +35,12 @@ class Day18
         # + will set depth correctly
         from_array(l) + from_array(r)
       else
-        TreeNode.new(value, nil, 0)
+        LeafNode.new(value, 0)
       end
     end
 
-    def +(right)
-      raise StandardError, "has parent: #{inspect}" unless depth == 0
-      raise StandardError, "has parent: #{right.inspect}" unless depth == 0
-
-      TreeNode.new(self.with_incr_parent, right.with_incr_parent, 0)
-    end
-
     def with_incr_parent
-      return TreeNode.new(left, nil, depth + 1) if leaf?
       TreeNode.new(left.with_incr_parent, right.with_incr_parent, depth + 1)
-    end
-
-    def split
-      return self unless leaf?
-      return self unless left >= 10
-
-      q, r = left.divmod(2)
-      lnode = TreeNode.new(q, nil, depth + 1)
-      rnode = TreeNode.new(q + r, nil, depth + 1)
-      TreeNode.new(lnode, rnode, depth)
     end
 
     def self.reduce(root)
@@ -80,28 +68,26 @@ class Day18
     def explode_once!
       assert_root!
       explodable_nodes.take(1).each do |explod|
-        raise StandardError, explod.inspect unless explod.left.leaf? && explod.right.leaf?
-        # TODO: these should always be leaf nodes:
-        lval, rval = explod.left.left, explod.right.left
+        lval, rval = explod.left.magnitude, explod.right.magnitude
 
         lnodes = leaf_nodes
         lix = lnodes.find_index(explod.left)
         raise StandardError, explod.inspect if lix.nil?
         raise StandardError, explod.inspect if lnodes.find_index(explod.right) != lix + 1
 
-        crater = TreeNode.new(0, nil, explod.depth)
+        crater = LeafNode.new(0, explod.depth)
 
         replacements = [
           [explod, crater]
         ]
         unless (lix - 1).negative?
           ltarget = lnodes[lix - 1]
-          lreplac = TreeNode.new(ltarget.left + lval, nil, ltarget.depth)
+          lreplac = LeafNode.new(ltarget.magnitude + lval, ltarget.depth)
           replacements << [ltarget, lreplac]
         end
         if lix + 2 < lnodes.length
           rtarget = lnodes[lix + 2]
-          rreplac = TreeNode.new(rtarget.left + rval, nil, rtarget.depth)
+          rreplac = LeafNode.new(rtarget.magnitude + rval, rtarget.depth)
           replacements << [rtarget, rreplac]
         end
         return with_replaced(replacements)
@@ -114,24 +100,19 @@ class Day18
     end
 
     def explodable?
-      !leaf? && depth == 4
+      depth == 4
     end
 
     def all_nodes
-      return [self] if leaf?
       # TODO: this is in the wrong order...
       [self] + left.all_nodes + right.all_nodes
     end
 
     def leaf_nodes
-      return [self] if leaf?
-
       left.leaf_nodes + right.leaf_nodes
     end
 
     def magnitude
-      return left if leaf?
-
       3 * left.magnitude + 2 * right.magnitude
     end
 
@@ -139,7 +120,6 @@ class Day18
       replacements.each do |target, replacement|
         return replacement if target == self
       end
-      return self if leaf?
       new_left = left.with_replaced(replacements)
       new_right = right.with_replaced(replacements)
       return self if new_left == left && new_right == right
@@ -156,12 +136,57 @@ class Day18
     private
 
     def initialize(left, right, depth)
-      if right.nil?
-        raise StandardError, "not integer: #{left.inspect} (#{left.class})" unless left.class == Integer
-      end
-      raise TypeError, "depth: #{depth} #{depth.class}" unless depth.class == Integer
+      raise StandardError, "use LeafNode" if right.nil?
       @left = left
       @right = right
+      @depth = depth
+    end
+  end
+
+  class LeafNode < TreeBase
+    attr_reader :magnitude
+
+    def eql?(other)
+      other.leaf? && other.magnitude == magnitude
+    end
+
+    def leaf?
+      true
+    end
+
+    def explodable?
+      false
+    end
+
+    def with_incr_parent
+      LeafNode.new(magnitude, depth + 1)
+    end
+
+    def with_replaced(replacements)
+      replacements.each do |target, replacement|
+        return replacement if target == self
+      end
+      self
+    end
+
+    def split
+      return self unless magnitude >= 10
+
+      q, r = magnitude.divmod(2)
+      lnode = LeafNode.new(q, depth + 1)
+      rnode = LeafNode.new(q + r, depth + 1)
+      TreeNode.new(lnode, rnode, depth)
+    end
+
+    def leaf_nodes
+      [self]
+    end
+    alias :all_nodes :leaf_nodes
+
+    private
+
+    def initialize(magnitude, depth)
+      @magnitude = magnitude
       @depth = depth
     end
   end
