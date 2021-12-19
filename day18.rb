@@ -76,7 +76,7 @@ class Day18
 
     def initialize(left, right, depth)
       raise StandardError, "use LeafNode" if right.nil?
-      #raise StandardError, "use RootNode" if depth.zero?
+      raise StandardError, "use RootNode" if depth.zero?
       @left = left
       @right = right
       @depth = depth
@@ -106,8 +106,15 @@ class Day18
     end
 
     def with_replaced(replacements)
-      x = super
-      RootNode.new(x.left, x.right)
+      replacements.each do |target, replacement|
+        return replacement if target == self
+      end
+      new_left = left.with_replaced(replacements)
+      new_right = right.with_replaced(replacements)
+      return self if new_left == left && new_right == right
+      RootNode.new(
+        new_left,
+        new_right)
     end
 
     def explode_once!
@@ -265,10 +272,6 @@ assert_equal [[[[1, 1], [2, 2]], [3, 3]], [4, 4]], [
     [3, 3],
     [4, 4]
 ].map(&RootNode.method(:from_array)).reduce(&:+)
-assert_equal 9, RootNode.from_array(9).split
-assert_equal [5, 5], RootNode.from_array(10).split
-assert_equal [5, 6], RootNode.from_array(11).split
-assert_equal [6, 6], RootNode.from_array(12).split
 
 assert_equal [9, 3], RootNode.from_array([9, 3]).split_once! # nothing over 10 -> don't split anything
 assert_equal [[5, 5], 3], RootNode.from_array([10, 3]).split_once!
