@@ -4,8 +4,7 @@
 
 class Day18
   class TreeNode
-    attr_accessor :left, :right
-    attr_reader :depth
+    attr_reader :left, :right, :depth
 
     def eql?(other)
       return false if other.class != TreeNode
@@ -46,47 +45,68 @@ class Day18
       TreeNode.new(left.with_incr_parent, right.with_incr_parent, depth + 1)
     end
 
-    def split!
-      return false unless leaf?
-      return false unless left >= 10
+    def split
+      return self unless leaf?
+      return self unless left >= 10
 
       q, r = left.divmod(2)
-      self.left = TreeNode.new(q, nil, depth + 1)
-      self.right = TreeNode.new(q + r, nil, depth + 1)
-      true
+      lnode = TreeNode.new(q, nil, depth + 1)
+      rnode = TreeNode.new(q + r, nil, depth + 1)
+      TreeNode.new(lnode, rnode, depth)
     end
 
-    def reduce!
+    def self.reduce(root)
+      root.assert_root!
       loop do
-        next if explode_once!
-        next if split_once!
-        return
+        prev_root = root
+        next if prev_root != (root = root.explode_once!)
+        next if prev_root != (root = root.split_once!)
+
+        return root
       end
     end
 
     def split_once!
+      assert_root!
       leaf_nodes.each do |node|
-        return true if node.split!
+        sp = node.split
+        if sp != node
+          return with_replaced([[node, sp]])
+        end
       end
-      false
+      self
     end
 
     def explode_once!
+      assert_root!
       explodable_nodes.take(1).each do |explod|
         raise StandardError, explod.inspect unless explod.left.leaf? && explod.right.leaf?
+        # TODO: these should always be leaf nodes:
         lval, rval = explod.left.left, explod.right.left
 
         lnodes = leaf_nodes
         lix = lnodes.find_index(explod.left)
         raise StandardError, explod.inspect if lix.nil?
-        lnodes[lix - 1].left += lval if lix - 1 >= 0
-        lnodes[lix + 2].left += rval if lix + 2 < lnodes.length
-        explod.left = 0
-        explod.right = nil
+        raise StandardError, explod.inspect if lnodes.find_index(explod.right) != lix + 1
 
-        return true
+        crater = TreeNode.new(0, nil, explod.depth)
+
+        replacements = [
+          [explod, crater]
+        ]
+        unless (lix - 1).negative?
+          ltarget = lnodes[lix - 1]
+          lreplac = TreeNode.new(ltarget.left + lval, nil, ltarget.depth)
+          replacements << [ltarget, lreplac]
+        end
+        if lix + 2 < lnodes.length
+          rtarget = lnodes[lix + 2]
+          rreplac = TreeNode.new(rtarget.left + rval, nil, rtarget.depth)
+          replacements << [rtarget, rreplac]
+        end
+        return with_replaced(replacements)
       end
-      return false
+      self
     end
 
     def explodable_nodes
@@ -99,6 +119,7 @@ class Day18
 
     def all_nodes
       return [self] if leaf?
+      # TODO: this is in the wrong order...
       [self] + left.all_nodes + right.all_nodes
     end
 
@@ -112,6 +133,21 @@ class Day18
       return left if leaf?
 
       3 * left.magnitude + 2 * right.magnitude
+    end
+
+    def with_replaced(replacements)
+      replacements.each do |target, replacement|
+        return replacement if target == self
+      end
+      return self if leaf?
+      TreeNode.new(
+        left.with_replaced(replacements),
+        right.with_replaced(replacements),
+        depth)
+    end
+
+    def assert_root!
+      raise StandardError, "Reduce depth=#{depth} #{inspect}" unless depth.zero?
     end
 
     private
@@ -141,9 +177,7 @@ class Day18
     arr
       .map(&TreeNode.method(:from_array))
       .reduce { |prev, node|
-        tn = prev + node
-        tn.reduce!
-        tn
+        TreeNode.reduce(prev + node)
       }
   end
 
@@ -154,8 +188,7 @@ class Day18
         l = TreeNode.from_array(l)
         r = TreeNode.from_array(r)
         s = l + r
-        s.reduce!
-        s.magnitude
+        TreeNode.reduce(s).magnitude
       }
       .max
   end
@@ -194,15 +227,15 @@ assert_equal [[[[1, 1], [2, 2]], [3, 3]], [4, 4]], [
     [3, 3],
     [4, 4]
 ].map(&TreeNode.method(:from_array)).reduce(&:+)
-assert_equal 9, TreeNode.from_array(9).tap(&:split!)
-assert_equal [5, 5], TreeNode.from_array(10).tap(&:split!)
-assert_equal [5, 6], TreeNode.from_array(11).tap(&:split!)
-assert_equal [6, 6], TreeNode.from_array(12).tap(&:split!)
+assert_equal 9, TreeNode.from_array(9).split
+assert_equal [5, 5], TreeNode.from_array(10).split
+assert_equal [5, 6], TreeNode.from_array(11).split
+assert_equal [6, 6], TreeNode.from_array(12).split
 
-assert_equal [9, 3], TreeNode.from_array([9, 3]).tap(&:split_once!) # nothing over 10 -> don't split anything
-assert_equal [[5, 5], 3], TreeNode.from_array([10, 3]).tap(&:split_once!)
-assert_equal [[5, 5], 11], TreeNode.from_array([10, 11]).tap(&:split_once!) # only split leftmost value
-assert_equal [[9, [5, 5]], 11], TreeNode.from_array([[9, 10], 11]).tap(&:split_once!) # only split leftmost value
+assert_equal [9, 3], TreeNode.from_array([9, 3]).split_once! # nothing over 10 -> don't split anything
+assert_equal [[5, 5], 3], TreeNode.from_array([10, 3]).split_once!
+assert_equal [[5, 5], 11], TreeNode.from_array([10, 11]).split_once! # only split leftmost value
+assert_equal [[9, [5, 5]], 11], TreeNode.from_array([[9, 10], 11]).split_once! # only split leftmost value
 
 assert_equal 29, TreeNode.from_array([9, 1]).magnitude
 assert_equal 21, TreeNode.from_array([1, 9]).magnitude
@@ -214,14 +247,14 @@ assert_equal 791, TreeNode.from_array([[[[3, 0], [5, 3]], [4, 4]], [5, 5]]).magn
 assert_equal 1137, TreeNode.from_array([[[[5, 0], [7, 4]], [5, 5]], [6, 6]]).magnitude
 assert_equal 3488, TreeNode.from_array([[[[8, 7], [7, 7]], [[8, 6], [7, 7]]], [[[0, 7], [6, 6]], [8, 7]]]).magnitude
 
-assert_equal [5, [7, 2]], TreeNode.from_array([5, [7, 2]]).tap(&:explode_once!) # no explosion
-assert_equal [[[[0, 9], 2], 3], 4], TreeNode.from_array([[[[[9, 8], 1], 2], 3], 4]).tap(&:explode_once!)
-assert_equal [7, [6, [5, [7, 0]]]], TreeNode.from_array([7, [6, [5, [4, [3, 2]]]]]).tap(&:explode_once!)
-assert_equal [[6, [5, [7, 0]]], 3], TreeNode.from_array([[6, [5, [4, [3, 2]]]], 1]).tap(&:explode_once!)
+assert_equal [5, [7, 2]], TreeNode.from_array([5, [7, 2]]).explode_once! # no explosion
+assert_equal [[[[0, 9], 2], 3], 4], TreeNode.from_array([[[[[9, 8], 1], 2], 3], 4]).explode_once!
+assert_equal [7, [6, [5, [7, 0]]]], TreeNode.from_array([7, [6, [5, [4, [3, 2]]]]]).explode_once!
+assert_equal [[6, [5, [7, 0]]], 3], TreeNode.from_array([[6, [5, [4, [3, 2]]]], 1]).explode_once!
 assert_equal [[3, [2, [8, 0]]], [9, [5, [4, [3, 2]]]]],
-             TreeNode.from_array([[3, [2, [1, [7, 3]]]], [6, [5, [4, [3, 2]]]]]).tap(&:explode_once!)
+             TreeNode.from_array([[3, [2, [1, [7, 3]]]], [6, [5, [4, [3, 2]]]]]).explode_once!
 assert_equal [[3, [2, [8, 0]]], [9, [5, [7, 0]]]],
-  TreeNode.from_array([[3, [2, [8, 0]]], [9, [5, [4, [3, 2]]]]]).tap(&:explode_once!)
+  TreeNode.from_array([[3, [2, [8, 0]]], [9, [5, [4, [3, 2]]]]]).explode_once!
 
 assert_equal [[[[1, 1], [2, 2]], [3, 3]], [4, 4]], Day18.final_sum(
   [
