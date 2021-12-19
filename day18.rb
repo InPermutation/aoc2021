@@ -10,7 +10,7 @@ class Day18
       raise StandardError, "has parent: #{inspect}" unless depth.zero?
       raise StandardError, "has parent: #{right.inspect}" unless right.depth.zero?
 
-      TreeNode.new(self.with_incr_parent, right.with_incr_parent, 0)
+      RootNode.new(self.with_incr_parent, right.with_incr_parent)
     end
   end
 
@@ -43,8 +43,49 @@ class Day18
       TreeNode.new(left.with_incr_parent, right.with_incr_parent, depth + 1)
     end
 
-    def self.reduce(root)
-      root.assert_root!
+    def explodable?
+      depth == 4
+    end
+
+    def all_nodes
+      left.all_nodes + [self] + right.all_nodes
+    end
+
+    def leaf_nodes
+      left.leaf_nodes + right.leaf_nodes
+    end
+
+    def magnitude
+      3 * left.magnitude + 2 * right.magnitude
+    end
+
+    def with_replaced(replacements)
+      replacements.each do |target, replacement|
+        return replacement if target == self
+      end
+      new_left = left.with_replaced(replacements)
+      new_right = right.with_replaced(replacements)
+      return self if new_left == left && new_right == right
+      TreeNode.new(
+        new_left,
+        new_right,
+        depth)
+    end
+
+    private
+
+    def initialize(left, right, depth)
+      raise StandardError, "use LeafNode" if right.nil?
+      #raise StandardError, "use RootNode" if depth.zero?
+      @left = left
+      @right = right
+      @depth = depth
+    end
+  end
+
+  class RootNode < TreeNode
+    def reduce
+      root = self
       loop do
         prev_root = root
         next if prev_root != (root = root.explode_once!)
@@ -55,7 +96,6 @@ class Day18
     end
 
     def split_once!
-      assert_root!
       leaf_nodes.each do |node|
         sp = node.split
         if sp != node
@@ -65,8 +105,12 @@ class Day18
       self
     end
 
+    def with_replaced(replacements)
+      x = super
+      RootNode.new(x.left, x.right)
+    end
+
     def explode_once!
-      assert_root!
       explodable_nodes.take(1).each do |explod|
         lval, rval = explod.left.magnitude, explod.right.magnitude
 
@@ -99,46 +143,13 @@ class Day18
       all_nodes.select(&:explodable?)
     end
 
-    def explodable?
-      depth == 4
-    end
-
-    def all_nodes
-      left.all_nodes + [self] + right.all_nodes
-    end
-
-    def leaf_nodes
-      left.leaf_nodes + right.leaf_nodes
-    end
-
-    def magnitude
-      3 * left.magnitude + 2 * right.magnitude
-    end
-
-    def with_replaced(replacements)
-      replacements.each do |target, replacement|
-        return replacement if target == self
-      end
-      new_left = left.with_replaced(replacements)
-      new_right = right.with_replaced(replacements)
-      return self if new_left == left && new_right == right
-      TreeNode.new(
-        new_left,
-        new_right,
-        depth)
-    end
-
-    def assert_root!
-      raise StandardError, "Reduce depth=#{depth} #{inspect}" unless depth.zero?
-    end
-
     private
 
-    def initialize(left, right, depth)
+    def initialize(left, right)
       raise StandardError, "use LeafNode" if right.nil?
       @left = left
       @right = right
-      @depth = depth
+      @depth = 0
     end
   end
 
@@ -204,7 +215,7 @@ class Day18
     arr
       .map(&TreeNode.method(:from_array))
       .reduce { |prev, node|
-        TreeNode.reduce(prev + node)
+        (prev + node).reduce
       }
   end
 
@@ -215,7 +226,7 @@ class Day18
         l = TreeNode.from_array(l)
         r = TreeNode.from_array(r)
         s = l + r
-        TreeNode.reduce(s).magnitude
+        s.reduce.magnitude
       }
       .max
   end
@@ -228,7 +239,7 @@ class Day18
     @lines = lines
   end
 end
-TreeNode = Day18::TreeNode
+RootNode = Day18::RootNode
 
 class AssertionError < StandardError; end
 
@@ -239,49 +250,49 @@ def assert(msg = 'Assertion failed')
 end
 
 def assert_equal(expected, actual)
-  expected = TreeNode.from_array(expected)
-  actual = TreeNode.from_array(actual) if actual.class == Integer || actual.class == Array
+  expected = RootNode.from_array(expected)
+  actual = RootNode.from_array(actual) if actual.class == Integer || actual.class == Array
   assert("\nExpect #{expected.inspect}\nActual #{actual.inspect}") { expected.eql? actual }
 end
 
-assert_equal [1, 2], TreeNode.from_array([1, 2])
-assert("Identity equals") { TreeNode.from_array([1, 2]) !=
-                            TreeNode.from_array([1, 2]) }
-assert_equal [[1, 2], [[3, 4], 5]], TreeNode.from_array([1, 2]) + TreeNode.from_array([[3, 4], 5])
+assert_equal [1, 2], RootNode.from_array([1, 2])
+assert("Identity equals") { RootNode.from_array([1, 2]) !=
+                            RootNode.from_array([1, 2]) }
+assert_equal [[1, 2], [[3, 4], 5]], RootNode.from_array([1, 2]) + RootNode.from_array([[3, 4], 5])
 assert_equal [[[[1, 1], [2, 2]], [3, 3]], [4, 4]], [
     [1, 1],
     [2, 2],
     [3, 3],
     [4, 4]
-].map(&TreeNode.method(:from_array)).reduce(&:+)
-assert_equal 9, TreeNode.from_array(9).split
-assert_equal [5, 5], TreeNode.from_array(10).split
-assert_equal [5, 6], TreeNode.from_array(11).split
-assert_equal [6, 6], TreeNode.from_array(12).split
+].map(&RootNode.method(:from_array)).reduce(&:+)
+assert_equal 9, RootNode.from_array(9).split
+assert_equal [5, 5], RootNode.from_array(10).split
+assert_equal [5, 6], RootNode.from_array(11).split
+assert_equal [6, 6], RootNode.from_array(12).split
 
-assert_equal [9, 3], TreeNode.from_array([9, 3]).split_once! # nothing over 10 -> don't split anything
-assert_equal [[5, 5], 3], TreeNode.from_array([10, 3]).split_once!
-assert_equal [[5, 5], 11], TreeNode.from_array([10, 11]).split_once! # only split leftmost value
-assert_equal [[9, [5, 5]], 11], TreeNode.from_array([[9, 10], 11]).split_once! # only split leftmost value
+assert_equal [9, 3], RootNode.from_array([9, 3]).split_once! # nothing over 10 -> don't split anything
+assert_equal [[5, 5], 3], RootNode.from_array([10, 3]).split_once!
+assert_equal [[5, 5], 11], RootNode.from_array([10, 11]).split_once! # only split leftmost value
+assert_equal [[9, [5, 5]], 11], RootNode.from_array([[9, 10], 11]).split_once! # only split leftmost value
 
-assert_equal 29, TreeNode.from_array([9, 1]).magnitude
-assert_equal 21, TreeNode.from_array([1, 9]).magnitude
-assert_equal 129, TreeNode.from_array([[9, 1], [1, 9]]).magnitude
-assert_equal 143, TreeNode.from_array([[1, 2], [[3, 4], 5]]).magnitude
-assert_equal 1384, TreeNode.from_array([[[[0, 7], 4], [[7, 8], [6, 0]]], [8, 1]]).magnitude
-assert_equal 445, TreeNode.from_array([[[[1, 1], [2, 2]], [3, 3]], [4, 4]]).magnitude
-assert_equal 791, TreeNode.from_array([[[[3, 0], [5, 3]], [4, 4]], [5, 5]]).magnitude
-assert_equal 1137, TreeNode.from_array([[[[5, 0], [7, 4]], [5, 5]], [6, 6]]).magnitude
-assert_equal 3488, TreeNode.from_array([[[[8, 7], [7, 7]], [[8, 6], [7, 7]]], [[[0, 7], [6, 6]], [8, 7]]]).magnitude
+assert_equal 29, RootNode.from_array([9, 1]).magnitude
+assert_equal 21, RootNode.from_array([1, 9]).magnitude
+assert_equal 129, RootNode.from_array([[9, 1], [1, 9]]).magnitude
+assert_equal 143, RootNode.from_array([[1, 2], [[3, 4], 5]]).magnitude
+assert_equal 1384, RootNode.from_array([[[[0, 7], 4], [[7, 8], [6, 0]]], [8, 1]]).magnitude
+assert_equal 445, RootNode.from_array([[[[1, 1], [2, 2]], [3, 3]], [4, 4]]).magnitude
+assert_equal 791, RootNode.from_array([[[[3, 0], [5, 3]], [4, 4]], [5, 5]]).magnitude
+assert_equal 1137, RootNode.from_array([[[[5, 0], [7, 4]], [5, 5]], [6, 6]]).magnitude
+assert_equal 3488, RootNode.from_array([[[[8, 7], [7, 7]], [[8, 6], [7, 7]]], [[[0, 7], [6, 6]], [8, 7]]]).magnitude
 
-assert_equal [5, [7, 2]], TreeNode.from_array([5, [7, 2]]).explode_once! # no explosion
-assert_equal [[[[0, 9], 2], 3], 4], TreeNode.from_array([[[[[9, 8], 1], 2], 3], 4]).explode_once!
-assert_equal [7, [6, [5, [7, 0]]]], TreeNode.from_array([7, [6, [5, [4, [3, 2]]]]]).explode_once!
-assert_equal [[6, [5, [7, 0]]], 3], TreeNode.from_array([[6, [5, [4, [3, 2]]]], 1]).explode_once!
+assert_equal [5, [7, 2]], RootNode.from_array([5, [7, 2]]).explode_once! # no explosion
+assert_equal [[[[0, 9], 2], 3], 4], RootNode.from_array([[[[[9, 8], 1], 2], 3], 4]).explode_once!
+assert_equal [7, [6, [5, [7, 0]]]], RootNode.from_array([7, [6, [5, [4, [3, 2]]]]]).explode_once!
+assert_equal [[6, [5, [7, 0]]], 3], RootNode.from_array([[6, [5, [4, [3, 2]]]], 1]).explode_once!
 assert_equal [[3, [2, [8, 0]]], [9, [5, [4, [3, 2]]]]],
-             TreeNode.from_array([[3, [2, [1, [7, 3]]]], [6, [5, [4, [3, 2]]]]]).explode_once!
+             RootNode.from_array([[3, [2, [1, [7, 3]]]], [6, [5, [4, [3, 2]]]]]).explode_once!
 assert_equal [[3, [2, [8, 0]]], [9, [5, [7, 0]]]],
-  TreeNode.from_array([[3, [2, [8, 0]]], [9, [5, [4, [3, 2]]]]]).explode_once!
+  RootNode.from_array([[3, [2, [8, 0]]], [9, [5, [4, [3, 2]]]]]).explode_once!
 
 assert_equal [[[[1, 1], [2, 2]], [3, 3]], [4, 4]], Day18.final_sum(
   [
@@ -343,13 +354,13 @@ example_assignment = [
 ]
 fsum = [[[[6, 6], [7, 6]], [[7, 7], [7, 0]]], [[[7, 7], [7, 7]], [[7, 8], [9, 9]]]]
 assert_equal fsum, Day18.final_sum(example_assignment)
-assert_equal 4140, TreeNode.from_array(fsum).magnitude
+assert_equal 4140, RootNode.from_array(fsum).magnitude
 
 assert_equal [[[[7,8],[6,6]],[[6,0],[7,7]]],[[[7,8],[8,8]],[[7,9],[0,6]]]], Day18.final_sum([
     [[2, [[7, 7], 7]], [[5, 8], [[9, 3], [0, 2]]]],
     [[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]
 ])
-assert_equal 3993, TreeNode.from_array([[[[7,8],[6,6]],[[6,0],[7,7]]],[[[7,8],[8,8]],[[7,9],[0,6]]]]).magnitude
+assert_equal 3993, RootNode.from_array([[[[7,8],[6,6]],[[6,0],[7,7]]],[[[7,8],[8,8]],[[7,9],[0,6]]]]).magnitude
 assert_equal 3993, Day18.maximum_pair_sum(example_assignment)
 
 puts "\nTests passed"
