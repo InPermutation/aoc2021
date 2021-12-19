@@ -140,9 +140,12 @@ class Day18
         return replacement if target == self
       end
       return self if leaf?
+      new_left = left.with_replaced(replacements)
+      new_right = right.with_replaced(replacements)
+      return self if new_left == left && new_right == right
       TreeNode.new(
-        left.with_replaced(replacements),
-        right.with_replaced(replacements),
+        new_left,
+        new_right,
         depth)
     end
 
