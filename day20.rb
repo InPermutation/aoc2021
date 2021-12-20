@@ -3,21 +3,15 @@
 
 class Day20
   def part1
-    img = @input_image
-    2.times do
-      img = enhance(img)
-      self.class.debug_image(img)
-    end
-    img.values.select(&self.class.method(:light?)).length
+    2.times
+     .reduce(@input_image) { |img, _| enhance(img) }
+     .values.tally['#']
   end
 
   def part2
-    img = @input_image
-    50.times do
-      img = enhance(img)
-      self.class.debug_image(img)
-    end
-    img.values.select(&self.class.method(:light?)).length
+    50.times
+      .reduce(@input_image) { |img, ix| p ix ; enhance(img) }
+      .values.tally['#']
   end
 
   private
@@ -39,16 +33,13 @@ class Day20
     res.freeze
   end
 
-  def self.light?(ch)
-    ch == '#'
-  end
-
   WINDOW_OFFSETS = [-1, 0, 1].product([-1, 0, 1]).map(&:freeze).freeze
+  BINARY_FROM_LIGHT = '.#'.chars.freeze.method(:find_index)
   def self.window_centered(coord, img)
     cx, cy = coord
     WINDOW_OFFSETS
       .map { |dy, dx| img[[cx + dx, cy + dy]] }
-      .map { |v| light?(v) ? 1 : 0 }
+      .map(&BINARY_FROM_LIGHT)
       .to_a
       .join
       .to_i(2)
@@ -86,8 +77,8 @@ class Day20
 
   def initialize(lines)
     @enhancement_algorithm = lines[0].freeze
-    raise StandardError, 'oh_no' if self.class.light?(@enhancement_algorithm[0]) &&
-                                    self.class.light?(@enhancement_algorithm[-1])
+    raise StandardError, 'the vastness of space brightens your face' if
+    @enhancement_algorithm[0] == '#' && @enhancement_algorithm[-1] == '#'
     raise StandardError, "512 != #{@enhancement_algorithm.length}" unless @enhancement_algorithm.length == 512
 
     @input_image = Hash.new('.')
