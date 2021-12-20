@@ -2,10 +2,28 @@
 # frozen_string_literal: true
 
 class Day20
-  def part1; end
+  def part1
+    img = @input_image
+    2.times do |n|
+      img = enhance(img)
+      self.class.debug_image(img)
+    end
+    img.length
+  end
+
   def part2; end
 
   private
+
+  def enhance(img)
+    res = {}
+    self.class.bounds(img).each do |coord|
+      nv = self.class.window_centered(coord, img)
+      enhanced = enhancement_algorithm[nv]
+      res[coord] = enhanced if enhanced
+    end
+    res
+  end
 
   def light?(ch)
     ch == '#'
@@ -13,6 +31,16 @@ class Day20
 
   def dark?(ch)
     ch == '.'
+  end
+
+  WINDOW_OFFSETS = [-1, 0, 1].product([-1, 0, 1]).map(&:freeze).freeze
+  def self.window_centered(coord, img)
+    cx, cy = coord
+    WINDOW_OFFSETS.map { |dy, dx| img[[cx + dx, cy + dy]] ? '1' : '0' }.to_a.join.to_i(2)
+  end
+
+  def self.bounds(img)
+    bounds_x(img).to_a.product(bounds_y(img).to_a)
   end
 
   def self.bounds_y(img)
@@ -42,7 +70,8 @@ class Day20
 
   def initialize(lines)
     @enhancement_algorithm = lines[0].chars.map(&method(:light?)).freeze
-    raise StandardError, 'All-dark enhancement must remain dark' if @enhancement_algorithm.first
+    raise StandardError, 'oh_no' if @enhancement_algorithm.first && @enhancement_algorithm.last
+    raise StandardError, "512 != #{@enhancement_algorithm.length}" unless @enhancement_algorithm.length == 512
 
     @input_image = {}
     lines.drop(2).each.with_index do |line, y|
@@ -59,4 +88,5 @@ end
 
 day20 = Day20.new(ARGF.map(&:chomp).freeze)
 p part1: day20.part1
+puts "(5294 is too low)"
 p part2: day20.part2
