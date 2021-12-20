@@ -11,7 +11,14 @@ class Day20
     img.values.select(&self.class.method(:light?)).length
   end
 
-  def part2; end
+  def part2
+    img = @input_image
+    50.times do
+      img = enhance(img)
+      self.class.debug_image(img)
+    end
+    img.values.select(&self.class.method(:light?)).length
+  end
 
   private
 
