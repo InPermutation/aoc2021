@@ -5,23 +5,23 @@ require 'matrix'
 
 class Day19
   def part1
-    solved = scanners.take(1)
-    unsolved = scanners.drop(1)
+    solved = scanners.take(1).to_a
+    unsolved = scanners.drop(1).to_a
     while unsolved.any?
       find_match!(solved, unsolved)
     end
+    solved.flat_map(&:beacons).uniq.length
   end
 
   def find_match!(solved, unsolved)
-    p :find_match!, solved.length, unsolved.length
     unsolved.each do |unsolved_scanner|
       unsolved_scanner.possible_orientations.each.with_index do |unsolved_orientation, i|
-        p un: i
         solved.each do |solved_scanner|
           overlap = solved_scanner.biggest_overlaps(unsolved_orientation)
-          if overlap.length > 12
-            solved.add(unsolved_orientation)
-            unsolved.remove(unsolved_scanner)
+          if overlap.length >= 12
+            puts "found #{solved_scanner.name} - #{unsolved_scanner.name}"
+            solved.push(unsolved_orientation)
+            unsolved.delete(unsolved_scanner)
             return
           end
         end
@@ -52,14 +52,12 @@ class Day19
     end
 
     def biggest_overlaps(other)
-      possible_offsets = beacons.product(other.beacons).map { |s, u| u - s }.uniq
+      possible_offsets = beacons.product(other.beacons).map { |s, u| s - u }.uniq
 
       overlaps = possible_offsets.map do |diff|
-        #p diff: diff, first_beacon: beacons[0], first_other: other.beacons[0], d: other.beacons[0] - diff
-        opoints = other.beacons.map { |beac| beac - diff }
+        opoints = other.beacons.map { |beac| beac + diff }
         opoints & beacons
       end
-      p count_overlaps: overlaps.map(&:length).uniq
       overlaps.max_by(&:length)
     end
 
@@ -88,6 +86,7 @@ class Day19
         beacons << Vector.elements(line.split(',').map(&:to_i))
       end
     end
+    @scanners << Scanner.new(name, beacons.freeze)
     @scanners = scanners.freeze
   end
 end
