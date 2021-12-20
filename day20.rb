@@ -34,15 +34,11 @@ class Day20
   end
 
   WINDOW_OFFSETS = [-1, 0, 1].product([-1, 0, 1]).map(&:freeze).freeze
-  BINARY_FROM_LIGHT = '.#'.chars.freeze.method(:find_index)
   def self.window_centered(coord, img)
     cx, cy = coord
     WINDOW_OFFSETS
-      .map { |dy, dx| img[[cx + dx, cy + dy]] }
-      .map(&BINARY_FROM_LIGHT)
-      .to_a
-      .join
-      .to_i(2)
+      .map { |dy, dx| img[[cx + dx, cy + dy]] == '#' ? 1 : 0 }
+      .reduce { |sum, bit| sum << 1 | bit }
   end
 
   def self.bounds(img)
