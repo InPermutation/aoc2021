@@ -19,9 +19,9 @@ class Day19
         solved.each do |solved_scanner|
           overlap = solved_scanner.biggest_overlaps(unsolved_orientation)
           if overlap.length >= 12
-            puts "found #{solved_scanner.name} - #{unsolved_scanner.name}"
             solved.push(unsolved_orientation)
             unsolved.delete(unsolved_scanner)
+            puts "found #{solved_scanner.name} - #{unsolved_scanner.name}. #{unsolved.length} remain."
             return
           end
         end
@@ -38,9 +38,19 @@ class Day19
   class Scanner
     attr_reader :name, :beacons
 
+    BASES = [
+      Vector[1, 0, 0, 0],
+      Vector[0, 1, 0, 0],
+      Vector[0, 0, 1, 0]
+    ].freeze
     ORDERINGS = [0, 1, 2].permutation(3).to_a.uniq.freeze
     REFLECTIONS = [-1, 1].product([-1, 1]).product([-1, 1]).map(&:flatten).to_a.freeze
-    ALL_ROTATIONS = ORDERINGS.product(REFLECTIONS).freeze
+    ALL_ROTATIONS = ORDERINGS.product(REFLECTIONS).select do |orderings, reflections|
+      bases = orderings.map(&BASES.method(:[]))
+      arg = bases.zip(reflections).map { |bvec, rval| bvec * rval }
+      cross = arg[0].cross(*arg.drop(1))
+      cross[3] == 1
+    end.freeze
     def possible_orientations
       ALL_ROTATIONS.map { |ordering, reflection|
         n = beacons.map { |b|
