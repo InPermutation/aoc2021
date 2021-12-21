@@ -45,14 +45,9 @@ class Day21
       next_roll = modulo(r.last + 1, DIE_STARTS, DIE_ENDS)
       r.push(next_roll)
     end
-
-    printf "#{name} rolls #{rolls.take(3).map(&:to_s).join('+')}"
     sum = rolls.take(3).sum
     dest = modulo(state.current_player.position + sum, BOARD_STARTS, BOARD_ENDS)
-    printf " and moves to space #{dest}"
     new_score = state.current_player.score + dest
-    printf " for a total score of #{new_score}."
-    puts
 
     GameState.new(state.next_player, Player.new(dest, new_score, name), rolls[3], state.total_roll_count + 3)
   end
