@@ -40,16 +40,20 @@ class Day21
   end
 
   def turn(state)
-    name = state.current_player.name
     rolls = 4.times.reduce([state.next_roll]) do |r, _|
       next_roll = modulo(r.last + 1, DIE_STARTS, DIE_ENDS)
       r.push(next_roll)
     end
-    sum = rolls.take(3).sum
-    dest = modulo(state.current_player.position + sum, BOARD_STARTS, BOARD_ENDS)
-    new_score = state.current_player.score + dest
 
-    GameState.new(state.next_player, Player.new(dest, new_score, name), rolls[3], state.total_roll_count + 3)
+    GameState.new(state.next_player, move(state.current_player, rolls), rolls[3], state.total_roll_count + 3)
+  end
+
+  def move(player, rolls)
+    name = player.name
+    sum = rolls.take(3).sum
+    dest = modulo(player.position + sum, BOARD_STARTS, BOARD_ENDS)
+    new_score = player.score + dest
+    Player.new(dest, new_score, name)
   end
 
   def key(state)
@@ -70,17 +74,14 @@ class Day21
 
   def dirac(state)
     wins[key(state)] ||= DIRAC_ROLLS.reduce(Hash.new(0)) do |iwin, rolls|
-      name = state.current_player.name
-      sum = rolls.take(3).sum
-      dest = modulo(state.current_player.position + sum, BOARD_STARTS, BOARD_ENDS)
-      new_score = state.current_player.score + dest
-      subscore = if new_score >= DIRAC_WIN_CONDITION
-                   {name => 1}
+      moved_player = move(state.current_player, rolls)
+      subscore = if moved_player.score >= DIRAC_WIN_CONDITION
+                   {moved_player.name => 1}
                  else
                    dirac(
                      GameState.new(
                        state.next_player,
-                       Player.new(dest, new_score, name),
+                       moved_player,
                        -1,
                        -1
                      )
