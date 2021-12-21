@@ -90,6 +90,13 @@ class Day21
   end
 end
 
+puts 'Tests '
+test = Day21.new(['Player 1 starting position: 4',
+                 'Player 2 starting position: 8'])
+raise StandardError, 'part1 failed' unless test.part1 == 739785
+raise StandardError, 'part2 failed' unless test.part2 == 444356092776315
+puts 'passed'
+
 day21 = Day21.new(ARGF.map(&:chomp).freeze)
 p part1: day21.part1
 p part2: day21.part2
