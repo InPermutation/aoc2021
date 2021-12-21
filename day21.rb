@@ -10,32 +10,30 @@ class Day21
   BOARD_ENDS = 10
 
   def part1
-    state = GameState.new(
-      Player.new(p1_start, SCORE_STARTS, 'Player 1'),
-      Player.new(p2_start, SCORE_STARTS, 'Player 2'),
-      DIE_STARTS,
-      ROLLS_STARTS
-    )
-
+    state = initial_state
     state = turn(state) while state.next_player.score < 1000
 
     [state.current_player.score, state.next_player.score].min * state.total_roll_count
   end
 
   def part2
-    state = GameState.new(
-      Player.new(p1_start, SCORE_STARTS, 'Player 1'),
-      Player.new(p2_start, SCORE_STARTS, 'Player 2'),
-      DIE_STARTS,
-      ROLLS_STARTS
-    )
-    dirac(state).values.max
+    dirac(initial_state).values.max
   end
 
   private
 
   Player = Struct.new(:position, :score, :name)
   GameState = Struct.new(:current_player, :next_player, :next_roll, :total_roll_count)
+
+  def initial_state
+    GameState.new(
+      Player.new(p1_start, SCORE_STARTS, 'Player 1'),
+      Player.new(p2_start, SCORE_STARTS, 'Player 2'),
+      DIE_STARTS,
+      ROLLS_STARTS
+    )
+  end
+
 
   def modulo(value, min, max)
     (value - min) % max + min
