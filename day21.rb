@@ -3,7 +3,6 @@
 
 class Day21
   SCORE_STARTS = 0
-  ROLLS_STARTS = 0
   DIE_STARTS = 1
   DIE_ENDS = 100
   BOARD_STARTS = 1
@@ -11,9 +10,15 @@ class Day21
 
   def part1
     state = initial_state
-    state = turn(state) while state.next_player.score < 1000
+    rolls = (DIE_STARTS..DIE_ENDS).to_a
+    count = 0
+    while state.next_player.score < 1000
+      state = GameState.new(state.next_player, move(state.current_player, rolls))
+      rolls.rotate!(3)
+      count += 3
+    end
 
-    [state.current_player.score, state.next_player.score].min * state.total_roll_count
+    [state.current_player.score, state.next_player.score].min * count
   end
 
   def part2
@@ -23,29 +28,18 @@ class Day21
   private
 
   Player = Struct.new(:position, :score, :name)
-  GameState = Struct.new(:current_player, :next_player, :next_roll, :total_roll_count)
+  GameState = Struct.new(:current_player, :next_player)
 
   def initial_state
     GameState.new(
       Player.new(p1_start, SCORE_STARTS, 'Player 1'),
-      Player.new(p2_start, SCORE_STARTS, 'Player 2'),
-      DIE_STARTS,
-      ROLLS_STARTS
+      Player.new(p2_start, SCORE_STARTS, 'Player 2')
     )
   end
 
 
   def modulo(value, min, max)
     (value - min) % max + min
-  end
-
-  def turn(state)
-    rolls = 4.times.reduce([state.next_roll]) do |r, _|
-      next_roll = modulo(r.last + 1, DIE_STARTS, DIE_ENDS)
-      r.push(next_roll)
-    end
-
-    GameState.new(state.next_player, move(state.current_player, rolls), rolls[3], state.total_roll_count + 3)
   end
 
   def move(player, rolls)
@@ -78,14 +72,7 @@ class Day21
       subscore = if moved_player.score >= DIRAC_WIN_CONDITION
                    {moved_player.name => 1}
                  else
-                   dirac(
-                     GameState.new(
-                       state.next_player,
-                       moved_player,
-                       -1,
-                       -1
-                     )
-                   )
+                   dirac(GameState.new(state.next_player, moved_player))
                  end
       iwin.merge(subscore) { |_key, old, new| old + new }
     end
