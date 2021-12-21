@@ -37,7 +37,6 @@ class Day21
     )
   end
 
-
   def modulo(value, min, max)
     (value - min) % max + min
   end
@@ -70,7 +69,7 @@ class Day21
     wins[key(state)] ||= DIRAC_ROLLS.reduce(Hash.new(0)) do |iwin, rolls|
       moved_player = move(state.current_player, rolls)
       subscore = if moved_player.score >= DIRAC_WIN_CONDITION
-                   {moved_player.name => 1}
+                   { moved_player.name => 1 }
                  else
                    dirac(GameState.new(state.next_player, moved_player))
                  end
@@ -78,8 +77,7 @@ class Day21
     end
   end
 
-  attr_reader :p1_start, :p2_start
-  attr_reader :wins
+  attr_reader :p1_start, :p2_start, :wins
 
   def initialize(lines)
     raise NotImplementedError unless lines.length == 2
@@ -92,9 +90,10 @@ end
 
 puts 'Tests '
 test = Day21.new(['Player 1 starting position: 4',
-                 'Player 2 starting position: 8'])
-raise StandardError, 'part1 failed' unless test.part1 == 739785
-raise StandardError, 'part2 failed' unless test.part2 == 444356092776315
+                  'Player 2 starting position: 8'])
+raise StandardError, 'part1 failed' unless test.part1 == 739_785
+raise StandardError, 'part2 failed' unless test.part2 == 444_356_092_776_315
+
 puts 'passed'
 
 day21 = Day21.new(ARGF.map(&:chomp).freeze)
