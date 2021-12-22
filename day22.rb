@@ -27,14 +27,14 @@ class Cuboid
 
   def except(other)
     what = ranges
-      .zip(other.ranges)
-      .map(&Cuboid.method(:possibly))
+           .zip(other.ranges)
+           .map(&Cuboid.method(:possibly))
 
     intersection = what[0].product(*what.drop(1))
     while intersection.delete(other.ranges); end
     cuboids = intersection
-      .map { |rangecube| Cuboid.new(rangecube) }
-      .to_a
+              .map { |rangecube| Cuboid.new(rangecube) }
+              .to_a
   end
 
   def self.possibly(range2)
@@ -42,19 +42,15 @@ class Cuboid
     if my_range.max < their_range.min || my_range.min > their_range.max
       raise "err possibly #{range2}"
     elsif my_range.min < their_range.min && my_range.max > their_range.max
-      return legal_ranges(*[
-        (my_range.min .. (their_range.min - 1)),
-        (their_range),
-        (their_range.max + 1)..my_range.max
-      ])
+      legal_ranges((my_range.min..(their_range.min - 1)), their_range, (their_range.max + 1)..my_range.max)
     elsif my_range.min >= their_range.min && my_range.max <= their_range.max
-      return [my_range]
+      [my_range]
     elsif my_range.min < their_range.min
-      return legal_ranges((my_range.min..(their_range.min - 1)), (their_range.min..my_range.max))
+      legal_ranges((my_range.min..(their_range.min - 1)), (their_range.min..my_range.max))
     elsif my_range.max >= their_range.max
-      return legal_ranges((my_range.min..their_range.max), ((their_range.max + 1)..my_range.max))
+      legal_ranges((my_range.min..their_range.max), ((their_range.max + 1)..my_range.max))
     else
-      raise "oh no"
+      raise 'oh no'
     end
   end
 
@@ -66,7 +62,7 @@ class Cuboid
     ranges.map(&:count).reduce(&:*)
   end
 
-  alias :to_s :inspect
+  alias to_s inspect
 
   private
 
@@ -78,7 +74,7 @@ end
 class Day22
   def part1
     init_commands = commands
-      .select { |_, cuboid| cuboid.init_procedure? }
+                    .select { |_, cuboid| cuboid.init_procedure? }
     execute(init_commands).sum(&:count)
   end
 
@@ -107,11 +103,11 @@ class Day22
     on_cuboids.each do |already_on|
       cuboids = cuboids.reject(&already_on.method(:fully_contains?))
       cuboids.each do |to_switch|
-        if already_on.intersect?(to_switch)
-          raise "whoops" unless cuboids.delete(to_switch)
-          cuboids += to_switch.except(already_on)
-          return switch_on(on_cuboids, *cuboids)
-        end
+        next unless already_on.intersect?(to_switch)
+        raise 'whoops' unless cuboids.delete(to_switch)
+
+        cuboids += to_switch.except(already_on)
+        return switch_on(on_cuboids, *cuboids)
       end
     end
     on_cuboids + cuboids
@@ -119,13 +115,11 @@ class Day22
 
   def switch_off(on_cuboids, cuboid)
     on_cuboids.each do |already_on|
-      if cuboid.intersect?(already_on)
-        raise "whoops" unless on_cuboids.delete(already_on)
-        unless cuboid.fully_contains?(already_on)
-          on_cuboids += already_on.except(cuboid)
-        end
-        return switch_off(on_cuboids, cuboid)
-      end
+      next unless cuboid.intersect?(already_on)
+      raise 'whoops' unless on_cuboids.delete(already_on)
+
+      on_cuboids += already_on.except(cuboid) unless cuboid.fully_contains?(already_on)
+      return switch_off(on_cuboids, cuboid)
     end
     on_cuboids
   end
@@ -134,18 +128,18 @@ class Day22
 
   def initialize(lines)
     @commands = lines
-      .map do |line|
-        cmd, rangestr = line.split(' ', 2)
+                .map do |line|
+      cmd, rangestr = line.split(' ', 2)
 
-        rangecube = rangestr
-          .split(',')
-          .map do |range|
-            _axis, range = range.split('=')
-            Range.new(*range.split('..').map(&:to_i))
-          end
+      rangecube = rangestr
+                  .split(',')
+                  .map do |range|
+        _axis, range = range.split('=')
+        Range.new(*range.split('..').map(&:to_i))
+      end
 
-        [cmd.freeze, Cuboid.new(rangecube)].freeze
-      end.to_a.freeze
+      [cmd.freeze, Cuboid.new(rangecube)].freeze
+    end.to_a.freeze
   end
 end
 
