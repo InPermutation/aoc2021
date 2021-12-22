@@ -75,16 +75,16 @@ class Day22
   def part1
     init_commands = commands
                     .select { |_, cuboid| cuboid.init_procedure? }
-    execute(init_commands).sum(&:count)
+    Day22.execute(init_commands).sum(&:count)
   end
 
   def part2
-    execute(commands).sum(&:count)
+    Day22.execute(commands).sum(&:count)
   end
 
   private
 
-  def execute(cmds)
+  def self.execute(cmds)
     i = 0
 
     cmds.reduce([]) do |on_cuboids, command|
@@ -99,7 +99,7 @@ class Day22
     end
   end
 
-  def switch_on(on_cuboids, *cuboids)
+  def self.switch_on(on_cuboids, *cuboids)
     on_cuboids.each do |already_on|
       cuboids = cuboids.reject(&already_on.method(:fully_contains?))
       cuboids.each do |to_switch|
@@ -113,7 +113,7 @@ class Day22
     on_cuboids + cuboids
   end
 
-  def switch_off(on_cuboids, cuboid)
+  def self.switch_off(on_cuboids, cuboid)
     on_cuboids.each do |already_on|
       next unless cuboid.intersect?(already_on)
       raise 'whoops' unless on_cuboids.delete(already_on)
