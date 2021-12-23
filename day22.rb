@@ -1,15 +1,19 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require 'pmap'
-
 class Cuboid
   # [xmin..xmax, ymin..ymax, zmin..zmax]
   attr_reader :ranges
 
+  def intersect?(other)
+    ranges.zip(other.ranges).all? do |rc1, rc2|
+      rc1.max >= rc2.min && rc1.min <= rc2.max
+    end
+  end
+
   def fully_contains?(other)
     ranges.zip(other.ranges).all? do |rc1, rc2|
-      rc1.begin <= rc2.begin && rc1.end >= rc2.end
+      rc1.min <= rc2.min && rc1.max >= rc2.max
     end
   end
 
@@ -19,6 +23,39 @@ class Cuboid
 
   def init_procedure?
     ranges.none? { |r| r.min < -50 || r.max > 50 }
+  end
+
+  def except(other)
+    what = ranges
+           .zip(other.ranges)
+           .map(&Cuboid.method(:possibly))
+
+    intersection = what[0].product(*what.drop(1))
+    while intersection.delete(other.ranges); end
+    cuboids = intersection
+              .map { |rangecube| Cuboid.new(rangecube) }
+              .to_a
+  end
+
+  def self.possibly(range2)
+    my_range, their_range = range2
+    if my_range.max < their_range.min || my_range.min > their_range.max
+      raise "err possibly #{range2}"
+    elsif my_range.min < their_range.min && my_range.max > their_range.max
+      legal_ranges((my_range.min..(their_range.min - 1)), their_range, (their_range.max + 1)..my_range.max)
+    elsif my_range.min >= their_range.min && my_range.max <= their_range.max
+      [my_range]
+    elsif my_range.min < their_range.min
+      legal_ranges((my_range.min..(their_range.min - 1)), (their_range.min..my_range.max))
+    elsif my_range.max >= their_range.max
+      legal_ranges((my_range.min..their_range.max), ((their_range.max + 1)..my_range.max))
+    else
+      raise 'oh no'
+    end
+  end
+
+  def self.legal_ranges(*ranges)
+    ranges.select { _1.count.positive? }
   end
 
   def count
@@ -38,110 +75,53 @@ class Day22
   def part1
     init_commands = commands
                     .select { |_, cuboid| cuboid.init_procedure? }
-    Day22.count_on(init_commands)
+    Day22.execute(init_commands).sum(&:count)
   end
 
   def part2
-    Day22.count_on(commands)
+    Day22.execute(commands).sum(&:count)
   end
 
   private
 
-  def self.disjoint(r1, r2)
-    r1_min, r1_max = r1.minmax
-    r2_min, r2_max = r2.minmax
-    raise "misordered" if r1_min > r2_min
-    raise "don't intersect" if r1_max < r2_min
+  def self.execute(cmds)
+    i = 0
 
-    if r1 == r2
-      return [r1]
-    end
-    if r1_min == r2_min
-      minmax = [r2_max, r1_max].minmax
-      smol = Range.new(r1_min, minmax.min)
-      lg = Range.new(minmax.min + 1, minmax.max)
-      return [smol, lg]
-    end
-    if r1_max > r2_max
-      return [Range.new(r1_min, r2_min - 1), r2, Range.new(r2_max + 1, r1_max)]
-    end
-    if r1_max == r2_max
-      return [Range.new(r1_min, r2_min - 1), r2]
-    end
-
-    return [Range.new(r1_min, r2_min - 1),
-            Range.new(r2_min, r1_max),
-            Range.new(r1_max + 1, r2_max)]
-  end
-
-  def self.range_combined(ranges)
-    has_replaced = true
-
-    while has_replaced do
-      has_replaced = false
-
-      ranges = ranges.sort_by(&:minmax)
-
-      i = 0
-      while i < ranges.length - 1
-        if ranges[i + 1].min <= ranges[i].max
-          replacements = disjoint(ranges[i], ranges[i+1])
-          ranges.delete_at(i + 1)
-          ranges.delete_at(i)
-          ranges.insert(i, *replacements)
-          has_replaced = true
-          break
-        end
-        i += 1
-      end
-    end
-    ranges
-  end
-
-  def self.sectors(cmds)
-    cxr, cyr, czr = (0..2).pmap { |i|
-      range_combined(cmds.map { |cmd| cmd[1].ranges[i] })
-    }
-    puts cxr.length
-    puts cyr.length
-    puts czr.length
-    @product = cxr.length * cyr.length * czr.length
-    p product: @product
-    Enumerator.new do |y|
-      for xr in cxr
-        for yr in cyr
-          for zr in czr
-            cub = Cuboid.new([xr, yr, zr])
-            y << cub
-          end
-        end
-      end
-    end
-  end
-
-  def self.lit?(sector, cmds)
-    cmds.reduce(false) do |lit, command|
+    cmds.reduce([]) do |on_cuboids, command|
+      puts "execute #{command} (#{i += 1}/#{cmds.length}) (on_cuboids.length = #{on_cuboids.length})"
       cmd, cuboid = command
-      is_contained = cuboid.fully_contains?(sector)
-
-      if is_contained
-        case cmd
-        when 'on'
-          true
-        when 'off'
-          false
-        end
-      else
-        lit
+      case cmd
+      when 'on'
+        on_cuboids = switch_on(on_cuboids, cuboid)
+      when 'off'
+        on_cuboids = switch_off(on_cuboids, cuboid)
       end
     end
   end
 
-  def self.count_on(cmds)
-    vals = sectors(cmds).pmap { |sector|
-      lit?(sector, cmds) ? sector.count : 0
-    }
-    vals.sum
+  def self.switch_on(on_cuboids, *cuboids)
+    on_cuboids.each do |already_on|
+      cuboids = cuboids.reject(&already_on.method(:fully_contains?))
+      cuboids.each do |to_switch|
+        next unless already_on.intersect?(to_switch)
+        raise 'whoops' unless cuboids.delete(to_switch)
+
+        cuboids += to_switch.except(already_on)
+        return switch_on(on_cuboids, *cuboids)
+      end
+    end
+    on_cuboids + cuboids
+  end
+
+  def self.switch_off(on_cuboids, cuboid)
+    on_cuboids.each do |already_on|
+      next unless cuboid.intersect?(already_on)
+      raise 'whoops' unless on_cuboids.delete(already_on)
+
+      on_cuboids += already_on.except(cuboid) unless cuboid.fully_contains?(already_on)
+      return switch_off(on_cuboids, cuboid)
+    end
+    on_cuboids
   end
 
   attr_reader :commands
@@ -162,20 +142,6 @@ class Day22
     end.to_a.freeze
   end
 end
-
-def assert_equal(expected, actual)
-  raise "assert_equal:\n#{expected} !=\n#{actual}" unless expected == actual
-end
-assert_equal [9..9, 10..10, 11..11, 12..12, 13..13],
-  Day22.range_combined([9..11, 10..12, 10..10, 11..13])
-assert_equal [10..19, 20..20, 21..30],
-  Day22.disjoint(10..20, 20..30)
-assert_equal [10..20, 21..30],
-  Day22.disjoint(10..20, 10..30)
-assert_equal [0..99, 100..150, 151..200],
-  Day22.disjoint(0..150, 100..200)
-assert_equal [0..99, 100..200, 201..300],
-  Day22.disjoint(0..300, 100..200)
 
 day22 = Day22.new(ARGF.map(&:chomp).freeze)
 p part1: day22.part1
