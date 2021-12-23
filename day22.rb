@@ -42,7 +42,7 @@ class Cuboid
   end
 
   def init_procedure?
-    ranges.none? { |r| r.min < -50 || r.max > 50 }
+    ranges.none? { |r| r.begin < -50 || r.end > 50 }
   end
 
   def except(other)
@@ -59,23 +59,27 @@ class Cuboid
 
   def self.possibly(range2)
     my_range, their_range = range2
-    if my_range.max < their_range.min || my_range.min > their_range.max
+    my_begin = my_range.begin
+    my_end = my_range.end
+    their_begin = their_range.begin
+    their_end = their_range.end
+    if my_end < their_begin || my_begin > their_end
       raise "err possibly #{range2}"
-    elsif my_range.min < their_range.min && my_range.max > their_range.max
-      legal_ranges((my_range.min..(their_range.min - 1)), their_range, (their_range.max + 1)..my_range.max)
-    elsif my_range.min >= their_range.min && my_range.max <= their_range.max
+    elsif my_begin < their_begin && my_end > their_end
+      legal_ranges((my_begin..(their_begin - 1)), their_range, (their_end + 1)..my_end)
+    elsif my_begin >= their_begin && my_end <= their_end
       [my_range]
-    elsif my_range.min < their_range.min
-      legal_ranges((my_range.min..(their_range.min - 1)), (their_range.min..my_range.max))
-    elsif my_range.max >= their_range.max
-      legal_ranges((my_range.min..their_range.max), ((their_range.max + 1)..my_range.max))
+    elsif my_begin < their_begin
+      legal_ranges((my_begin..(their_begin - 1)), (their_begin..my_end))
+    elsif my_end >= their_end
+      legal_ranges((my_begin..their_end), ((their_end + 1)..my_end))
     else
       raise 'oh no'
     end
   end
 
   def self.legal_ranges(*ranges)
-    ranges.select { _1.count.positive? }
+    ranges.select { _1.begin <= _1.end }
   end
 
   def count
