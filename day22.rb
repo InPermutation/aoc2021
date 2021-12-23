@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require 'pmap'
+
 class Cuboid
   # [xmin..xmax, ymin..ymax, zmin..zmax]
   attr_reader :ranges
@@ -97,14 +99,14 @@ class Day22
   end
 
   def self.sectors(cmds)
-    puts "sectors"
-    cxr = range_combined(cmds.map { |cmd| cmd[1].ranges[0] })
+    cxr, cyr, czr = (0..2).pmap { |i|
+      range_combined(cmds.map { |cmd| cmd[1].ranges[i] })
+    }
     puts cxr.length
-    cyr = range_combined(cmds.map { |cmd| cmd[1].ranges[1] })
     puts cyr.length
-    czr = range_combined(cmds.map { |cmd| cmd[1].ranges[2] })
     puts czr.length
     @product = cxr.length * cyr.length * czr.length
+    p product: @product
     Enumerator.new do |y|
       for xr in cxr
         for yr in cyr
@@ -136,12 +138,10 @@ class Day22
   end
 
   def self.count_on(cmds)
-
-    lit_sectors = sectors(cmds).select.with_index { |sector, index|
-      puts "Sector #{index} / #{@product} (#{index * 100.0 / @product}%)" if index & 1024 == 0
-      lit?(sector, cmds)
+    vals = sectors(cmds).pmap { |sector|
+      lit?(sector, cmds) ? sector.count : 0
     }
-    lit_sectors.sum(&:count)
+    vals.sum
   end
 
   attr_reader :commands
