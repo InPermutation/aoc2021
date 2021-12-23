@@ -6,15 +6,35 @@ class Cuboid
   attr_reader :ranges
 
   def intersect?(other)
-    ranges.zip(other.ranges).all? do |rc1, rc2|
-      rc1.max >= rc2.min && rc1.min <= rc2.max
-    end
+    myranges = ranges
+    oranges = other.ranges
+    rc1 = myranges[0]
+    rc2 = oranges[0]
+    return false unless rc1.end >= rc2.begin && rc1.begin <= rc2.end
+    rc1 = myranges[1]
+    rc2 = oranges[1]
+    return false unless rc1.end >= rc2.begin && rc1.begin <= rc2.end
+    rc1 = myranges[2]
+    rc2 = oranges[2]
+    return false unless rc1.end >= rc2.begin && rc1.begin <= rc2.end
+
+    return true
   end
 
   def fully_contains?(other)
-    ranges.zip(other.ranges).all? do |rc1, rc2|
-      rc1.min <= rc2.min && rc1.max >= rc2.max
-    end
+    myranges = ranges
+    oranges = other.ranges
+    rc1 = myranges[0]
+    rc2 = oranges[0]
+    return false unless rc1.begin <= rc2.begin && rc1.end >= rc2.end
+    rc1 = myranges[1]
+    rc2 = oranges[1]
+    return false unless rc1.begin <= rc2.begin && rc1.end >= rc2.end
+    rc1 = myranges[2]
+    rc2 = oranges[2]
+    return false unless rc1.begin <= rc2.begin && rc1.end >= rc2.end
+
+    return true
   end
 
   def inspect
