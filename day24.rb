@@ -57,21 +57,33 @@ class Day24
     coefficients
       .each do |a, b, c|
         newbest = {}
-        p items: best.length, a: a, b: b, c: c
         best.each do |z, inp|
           (1..9).each do |w|
             newz = Day24.step(a, b, c, w, z)
-            #p z: z, a: a, b: b, c: c, w: w, newz: newz
             newbest[newz] = inp * 10 + w
           end
         end
         best = newbest
-        p best.min_by { |z, _| z }
       end
     best[0]
   end
 
   def part2
+    coefficients = lines.each_slice(18).map(&self.class.method(:coeff))
+    best = { 0 => 0 }
+    coefficients
+      .each do |a, b, c|
+        newbest = {}
+        best.each do |z, inp|
+          (1..9).each do |w|
+            w = 10 - w
+            newz = Day24.step(a, b, c, w, z)
+            newbest[newz] = inp * 10 + w
+          end
+        end
+        best = newbest
+      end
+    best[0]
   end
 
   attr_reader :lines
