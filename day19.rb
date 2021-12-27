@@ -94,7 +94,10 @@ class Day19
 
   def initialize(lines)
     @already_tried = Hash.new { [] }
+    @solved = solve(parse(lines))
+  end
 
+  def parse(lines)
     scanners = []
     name = nil
     beacons = nil
@@ -111,6 +114,10 @@ class Day19
       end
     end
     scanners << Scanner.new(name, beacons)
+    scanners
+  end
+
+  def solve(scanners)
     solved = scanners.take(1).to_a
     unsolved = scanners.drop(1).to_a
     while unsolved.any?
@@ -124,7 +131,7 @@ class Day19
         puts "found TODO - #{unsolved_scanner.name}. diff = #{diff}. #{unsolved.length} remain."
       end
     end
-    @solved = solved
+    solved
   end
 end
 
