@@ -54,7 +54,7 @@ class AmphipodState
 
   def heuristic_cost
     # will be <= the actual cost
-    heuristic_from_rooms + heuristic_from_hall
+    heuristic_from_rooms + heuristic_from_hall + heuristic_to_home
   end
 
   private
@@ -73,7 +73,12 @@ class AmphipodState
         next if col == tcol
 
         desired_col = 2 * (tcol + 1)
-        min_moves = (start_col - desired_col).abs + 1 + row + 1
+
+        # cost to go back down is separate
+        up_moves = row + 1
+        side_moves = (start_col - desired_col).abs
+        min_moves = up_moves + side_moves
+
         sum += (min_moves * COSTS[type])
       end
     end
@@ -86,8 +91,22 @@ class AmphipodState
       next unless type
 
       desired_col = 2 * (TYPE_COL[type] + 1)
-      min_moves = (col - desired_col).abs + 1
+      # cost to go back down is separate
+      min_moves = (col - desired_col).abs
       sum += (min_moves * COSTS[type])
+    end
+    sum
+  end
+
+  def heuristic_to_home
+    sum = 0
+    TYPE_COL.each do |type, col|
+      rcol = rooms[col]
+      ROWS.each do |row|
+        next if type == rcol[row]
+        down_moves = row + 1
+        sum += (down_moves * COSTS[type])
+      end
     end
     sum
   end
