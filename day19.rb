@@ -10,18 +10,10 @@ class Day19
     solved.flat_map(&:beacons).uniq.length
   end
 
-  def find_matches!(solved, unsolved)
-    matches = unsolved
+  def find_matches(solved, unsolved)
+    unsolved
       .map { |uscan| find_one(solved, uscan) }
       .select { |_d, o, _uo, _us| o >= 12 }
-
-    raise NotImplementedError, "couldn't find any matches" if matches.empty?
-
-    matches.each do |diff, _, unsolved_orientation, unsolved_scanner|
-      solved.push(unsolved_orientation.with_offset(diff))
-      unsolved.delete_if { |it| it.name == unsolved_scanner.name }
-      puts "found TODO - #{unsolved_scanner.name}. diff = #{diff}. #{unsolved.length} remain."
-    end
   end
 
   def find_one(solved, unsolved_scanner)
@@ -38,7 +30,7 @@ class Day19
 
   def part2
     offsets = solved
-      .map(&:offset_from_0)
+              .map(&:offset_from_0)
     offsets
       .product(offsets)
       .map { |v1, v2| (v1 - v2) }
@@ -69,13 +61,13 @@ class Day19
       cross[3] == 1
     end.freeze
     def possible_orientations
-      ALL_ROTATIONS.map { |ordering, reflection|
-        n = beacons.map { |b|
+      ALL_ROTATIONS.map do |ordering, reflection|
+        n = beacons.map do |b|
           bo = Vector.elements(b.to_a.values_at(*ordering))
           Vector.elements(bo.zip(reflection).map { |c, x| c * x })
-        }
+        end
         Scanner.new(name, n)
-      }
+      end
     end
 
     def with_offset(d)
@@ -101,7 +93,7 @@ class Day19
   attr_reader :solved, :already_tried
 
   def initialize(lines)
-    @already_tried = Hash.new { Array.new }
+    @already_tried = Hash.new { [] }
 
     scanners = []
     name = nil
@@ -109,6 +101,7 @@ class Day19
 
     lines.each do |line|
       next if line.empty?
+
       if line.start_with?('---')
         scanners << Scanner.new(name, beacons) if name
         name = line.gsub('---', '').strip.freeze
@@ -121,7 +114,15 @@ class Day19
     solved = scanners.take(1).to_a
     unsolved = scanners.drop(1).to_a
     while unsolved.any?
-      find_matches!(solved, unsolved)
+      matches = find_matches(solved, unsolved)
+
+      raise NotImplementedError, "couldn't find any matches" if matches.empty?
+
+      matches.each do |diff, _, unsolved_orientation, unsolved_scanner|
+        solved.push(unsolved_orientation.with_offset(diff))
+        unsolved.delete_if { |it| it.name == unsolved_scanner.name }
+        puts "found TODO - #{unsolved_scanner.name}. diff = #{diff}. #{unsolved.length} remain."
+      end
     end
     @solved = solved
   end
