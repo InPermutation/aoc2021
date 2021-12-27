@@ -5,7 +5,7 @@ require 'set'
 require 'lazy_priority_queue'
 
 class AmphipodState
-  attr_reader :spaces, :rooms
+  attr_reader :spaces, :rooms, :rownums
   # spaces[space{11}]
   #
   # 0123456789A
@@ -19,9 +19,12 @@ class AmphipodState
   def inspect
     "<#{self.class} rooms='\n#############\n" +
       "#" + spaces.map { |ch| ch || '.' }.join('') + "#\n" +
-      "###" + rooms.map { |col| col[0] || '.' }.join('#') + "###\n" +
-      "  #" + rooms.map { |col| col[1] || '.' }.join('#') + "#\n" +
-      "  #########\n' heuristic=#{heuristic_cost}>"
+      rownums.map { |row|
+        (row == 0 ? "###" : "  #") +
+          rooms.map { |rcol| rcol[row] || '.' }.join('#') +
+          (row == 0 ? '###' : '#')
+      }.join("\n") +
+      "\n  #########\n' heuristic=#{heuristic_cost}>"
   end
   alias to_s inspect
 
@@ -42,11 +45,8 @@ class AmphipodState
     moves_out + moves_home
   end
 
-  TARGET_SOLUTION = [['A', 'A'], ['B', 'B'], ['C', 'C'], ['D', 'D']].map(&:freeze).freeze
   def solved?
-    return false unless spaces.compact.empty?
-    return false unless rooms == TARGET_SOLUTION
-    return true
+    heuristic_cost.zero?
   end
 
   def self.init_from(rooms)
@@ -61,13 +61,12 @@ class AmphipodState
   private
 
   COLS = (0..3).to_a.freeze
-  ROWS = (0..1).to_a.freeze
   def heuristic_from_rooms
     sum = 0
     COLS.each do |col|
       start_col = 2 * (col + 1)
       rcol = rooms[col]
-      ROWS.each do |row|
+      rownums.each do |row|
         type = rcol[row]
         next unless type
 
@@ -104,7 +103,7 @@ class AmphipodState
     sum = 0
     TYPE_COL.each do |type, col|
       rcol = rooms[col]
-      ROWS.each do |row|
+      rownums.each do |row|
         next if type == rcol[row]
         down_moves = row + 1
         sum += (down_moves * COSTS[type])
@@ -126,17 +125,20 @@ class AmphipodState
 
     COLS.each do |col|
       rcol = rooms[col]
-      ROWS.each do |row|
+      rownums.each do |row|
         type = rcol[row]
 
         # nobody here:
         next unless type
         # i'm blocked in:
-        next unless row == 0 || rcol[0].nil?
+        next unless rownums.all? { |rnum|
+          rnum >= row || rcol[rnum].nil?
+        }
         # i'm already home:
         if col == TYPE_COL[type]
-          next if row == 1
-          next if row == 0 && rcol[1] == type
+          next if rownums.all? { |rnum|
+            rnum <= row || rcol[rnum] == type
+          }
         end
 
         start_col = 2 * (col + 1)
@@ -187,13 +189,10 @@ class AmphipodState
 
     moves_count = (desired_home - col).abs
 
-    if rooms_copy[desired_col][1].nil?
-      moves_count += 2
-      rooms_copy[desired_col][1] = type
-    else
-      moves_count += 1
-      rooms_copy[desired_col][0] = type
-    end
+    dcol = rooms_copy[desired_col]
+    index = rownums.select { |row| dcol[row].nil? }.max
+    dcol[index] = type
+    moves_count += index + 1
 
     cost = moves_count * cost_basis
 
@@ -220,29 +219,28 @@ class AmphipodState
   TYPE_COL = 'ABCD'.chars.map.with_index.to_h.freeze
   def room_ready(type)
     rcol = rooms[TYPE_COL[type]]
-
-    rcol[1].nil? ||
-      (rcol[1] == type && rcol[0].nil?)
+    rcol.all? { |t| t == type || t.nil? }
   end
 
   def initialize(spaces, rooms)
     @spaces = spaces.freeze
     @rooms = rooms.map(&:freeze).freeze
+    @rownums = (0...rooms[0].length).to_a.freeze
   end
 end
 
 class Day23
   def part1
-    start = amphipods_init
-    self.class.a_star(start)
+    self.class.a_star(amphipods_init)
   end
 
   def part2
+    self.class.a_star(amphipods_extended_init)
   end
 
-  attr_reader :amphipods_init
-
   private
+
+  attr_reader :amphipods_init, :amphipods_extended_init
 
   EFFECTIVE_INFINITY = 1<<63
   def self.a_star(start)
@@ -257,19 +255,15 @@ class Day23
       current = fScore.pop
       curr_score = scores[current]
 
-      if (iter += 1) % 1000 == 0
-        puts current
-        puts "(#{curr_score})"
-        p gLen: scores.length, fLen: fScore.length
+      if current.solved?
+        raise StandardError if start.heuristic_cost > curr_score
+        return curr_score
       end
-
-      return curr_score if current.solved?
 
       current.moves.each do |neighbor, dist|
         tentative_score = curr_score + dist
         if tentative_score < scores[neighbor]
           new_score = tentative_score + neighbor.heuristic_cost
-
           if scores[neighbor] == EFFECTIVE_INFINITY
             fScore.push neighbor, new_score
           else
@@ -284,19 +278,31 @@ class Day23
     return :failure
   end
 
+  def self.rooms_from(lines)
+    lines
+      .drop(2)
+      .take_while { |line| !line.start_with?('  ###') }
+      .map { |line|
+        rms = line.gsub(' ', '').gsub('#', '')
+        rms.chars.map do |ch|
+          case ch
+          when '.'
+            nil
+          else
+            ch
+          end
+        end
+      }
+  end
 
   def initialize(lines)
-    rooms = lines
-      .drop(2)
-      .take(2)
-      .map { |line| line.gsub(/[^ABCD]/, '').chars.freeze }
-      .freeze
+    rooms = self.class.rooms_from(lines)
     @amphipods_init = AmphipodState.init_from(rooms)
+    rooms.insert(1, 'DCBA'.chars, 'DBAC'.chars)
+    @amphipods_extended_init = AmphipodState.init_from(rooms)
   end
 end
 
 day23 = Day23.new(ARGF.map(&:chomp).freeze)
 p part1: day23.part1
-puts "(must be >= #{day23.amphipods_init.heuristic_cost})"
-puts "(19198 is too high for INPUT)"
 p part2: day23.part2
