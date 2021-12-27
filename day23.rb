@@ -10,15 +10,17 @@ class AmphipodState
   #
   # 0123456789A
 
-  # rooms[[top], [bottom]]:
-  #   0 1 2 3
-  #   0 1 2 3
+  # rooms[[0], [1], [2], [3]]:
+  #   TopA BotA
+  #   TopB BotB
+  #   TopC BotC
+  #   TopD BotD
 
   def inspect
     "<#{self.class} rooms='\n#############\n" +
       "#" + spaces.map { |ch| ch || '.' }.join('') + "#\n" +
-      "###" + rooms[0].map { |ch| ch || '.' }.join('#') + "###\n" +
-      "  #" + rooms[1].map { |ch| ch || '.' }.join('#') + "#\n" +
+      "###" + rooms.map { |col| col[0] || '.' }.join('#') + "###\n" +
+      "  #" + rooms.map { |col| col[1] || '.' }.join('#') + "#\n" +
       "  #########\n' heuristic=#{heuristic_cost}>"
   end
   alias to_s inspect
@@ -40,8 +42,7 @@ class AmphipodState
     moves_out + moves_home
   end
 
-  TARGET_SOLUTION = [['A', 'B', 'C', 'D'].freeze,
-                     ['A', 'B', 'C', 'D'].freeze].freeze
+  TARGET_SOLUTION = [['A', 'A'], ['B', 'B'], ['C', 'C'], ['D', 'D']].map(&:freeze).freeze
   def solved?
     return false unless spaces.compact.empty?
     return false unless rooms == TARGET_SOLUTION
@@ -49,7 +50,7 @@ class AmphipodState
   end
 
   def self.init_from(rooms)
-    new(Array.new(11).freeze, rooms.freeze)
+    new(Array.new(11).freeze, rooms.transpose.freeze)
   end
 
   def heuristic_cost
@@ -65,8 +66,9 @@ class AmphipodState
     sum = 0
     COLS.each do |col|
       start_col = 2 * (col + 1)
+      rcol = rooms[col]
       ROWS.each do |row|
-        type = rooms[row][col]
+        type = rcol[row]
         next unless type
 
         tcol = TYPE_COL[type]
@@ -123,17 +125,18 @@ class AmphipodState
     mout = []
 
     COLS.each do |col|
+      rcol = rooms[col]
       ROWS.each do |row|
-        type = rooms[row][col]
+        type = rcol[row]
 
         # nobody here:
         next unless type
         # i'm blocked in:
-        next unless row == 0 || rooms[0][col].nil?
+        next unless row == 0 || rcol[0].nil?
         # i'm already home:
         if col == TYPE_COL[type]
           next if row == 1
-          next if row == 0 && rooms[1][col] == type
+          next if row == 0 && rcol[1] == type
         end
 
         start_col = 2 * (col + 1)
@@ -161,11 +164,11 @@ class AmphipodState
   end
 
   def move_one_out(row, col, start_col, open_col)
-    type = rooms[row][col]
+    type = rooms[col][row]
     rooms_copy = rooms.map(&:dup)
     spaces_copy = spaces.dup
 
-    rooms_copy[row][col] = nil
+    rooms_copy[col][row] = nil
     spaces_copy[open_col] = type
 
     moves_count = (row + 1) + (start_col - open_col).abs
@@ -184,12 +187,12 @@ class AmphipodState
 
     moves_count = (desired_home - col).abs
 
-    if rooms_copy[1][desired_col].nil?
+    if rooms_copy[desired_col][1].nil?
       moves_count += 2
-      rooms_copy[1][desired_col] = type
+      rooms_copy[desired_col][1] = type
     else
       moves_count += 1
-      rooms_copy[0][desired_col] = type
+      rooms_copy[desired_col][0] = type
     end
 
     cost = moves_count * cost_basis
@@ -216,14 +219,14 @@ class AmphipodState
 
   TYPE_COL = 'ABCD'.chars.map.with_index.to_h.freeze
   def room_ready(type)
-    tcol = TYPE_COL[type]
+    rcol = rooms[TYPE_COL[type]]
 
-    rooms[1][tcol].nil? ||
-      (rooms[1][tcol] == type && rooms[0][tcol].nil?)
+    rcol[1].nil? ||
+      (rcol[1] == type && rcol[0].nil?)
   end
 
   def initialize(spaces, rooms)
-    @spaces = spaces.map(&:freeze).freeze
+    @spaces = spaces.freeze
     @rooms = rooms.map(&:freeze).freeze
   end
 end
