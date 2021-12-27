@@ -12,8 +12,10 @@ class Day19
 
   def find_matches!(solved, unsolved)
     utmost = unsolved.map do |unsolved_scanner|
+      sdiff = solved - already_tried[unsolved_scanner]
+      already_tried[unsolved_scanner] += solved
       outer = Parallel.map(unsolved_scanner.possible_orientations) do |unsolved_orientation|
-        overlaps = solved.map do |solved_scanner|
+        overlaps = sdiff.map do |solved_scanner|
           solved_scanner.biggest_overlaps(unsolved_orientation)
         end
         overlaps.max_by { |o, _d| o } + [unsolved_orientation, unsolved_scanner]
@@ -101,9 +103,11 @@ class Day19
     end
   end
 
-  attr_reader :solved
+  attr_reader :solved, :already_tried
 
   def initialize(lines)
+    @already_tried = Hash.new { Array.new }
+
     scanners = []
     name = nil
     beacons = nil
