@@ -12,7 +12,7 @@ class Day19
 
   def part2
     offsets = solved
-              .map(&:offset_from_0)
+              .map(&:offset)
     offsets
       .product(offsets)
       .map { |v1, v2| (v1 - v2) }
@@ -27,7 +27,7 @@ class Day19
   end
 
   class Scanner
-    attr_reader :name, :beacons, :offset_from_0
+    attr_reader :name, :beacons, :offset
 
     BASES = [
       Vector.basis(size: 4, index: 0),
@@ -52,9 +52,9 @@ class Day19
       end
     end
 
-    def with_offset(d)
-      n = beacons.map(&d.method(:+))
-      Scanner.new(name, n, d)
+    def with_offset(diff)
+      n = beacons.map(&diff.method(:+))
+      Scanner.new(name, n, diff)
     end
 
     def biggest_overlaps(other)
@@ -64,10 +64,10 @@ class Day19
 
     private
 
-    def initialize(name, beacons, offset_from_0 = Vector[0, 0, 0])
-      @name = name
+    def initialize(name, beacons, offset = Vector[0, 0, 0])
+      @name = name.freeze
       @beacons = beacons.freeze
-      @offset_from_0 = offset_from_0
+      @offset = offset.freeze
     end
   end
 
@@ -79,27 +79,22 @@ class Day19
   end
 
   def parse(lines)
-    scanners = []
-    name = nil
-    beacons = nil
+    lines
+      .chunk(&:empty?)
+      .reject(&:first)
+      .map(&:last)
+      .map(&method(:parse_scanner))
+  end
 
-    lines.each do |line|
-      next if line.empty?
+  def parse_scanner(chunk)
+    name = chunk.first.gsub('-', '').strip
+    beacons = chunk.drop(1).map { |line| Vector.elements(line.split(',').map(&:to_i)) }
 
-      if line.start_with?('---')
-        scanners << Scanner.new(name, beacons) if name
-        name = line.gsub('---', '').strip.freeze
-        beacons = []
-      else
-        beacons << Vector.elements(line.split(',').map(&:to_i))
-      end
-    end
-    scanners << Scanner.new(name, beacons)
-    scanners
+    Scanner.new(name, beacons)
   end
 
   def solve(scanners)
-    solved = scanners.take(1).to_a
+    solved = [scanners.first]
     unsolved = scanners.drop(1).to_a
     while unsolved.any?
       matches = find_matches(solved, unsolved)
@@ -109,7 +104,6 @@ class Day19
       matches.each do |diff, _, unsolved_orientation, unsolved_scanner|
         solved.push(unsolved_orientation.with_offset(diff))
         unsolved.delete_if { |it| it.name == unsolved_scanner.name }
-        puts "found TODO - #{unsolved_scanner.name}. diff = #{diff}. #{unsolved.length} remain."
       end
     end
     solved
