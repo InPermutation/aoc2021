@@ -3,6 +3,7 @@
 
 require 'matrix'
 require 'set'
+require 'parallel'
 
 class Day19
   def part1
@@ -11,16 +12,18 @@ class Day19
 
   def find_match!(solved, unsolved)
     unsolved.each do |unsolved_scanner|
-      unsolved_scanner.possible_orientations.each.with_index do |unsolved_orientation, i|
-        solved.each do |solved_scanner|
-          overlap, diff = solved_scanner.biggest_overlaps(unsolved_orientation)
-          if overlap.length >= 12
-            solved.push(unsolved_orientation.with_offset(diff))
-            unsolved.delete(unsolved_scanner)
-            puts "found #{solved_scanner.name} - #{unsolved_scanner.name}. diff = #{diff}. #{unsolved.length} remain."
-            return
-          end
+      outer = Parallel.map(unsolved_scanner.possible_orientations) do |unsolved_orientation|
+        overlaps = solved.map do |solved_scanner|
+          solved_scanner.biggest_overlaps(unsolved_orientation)
         end
+        overlaps.max_by { |o, _d| o.length } + [unsolved_orientation]
+      end
+      overlap, diff, unsolved_orientation = outer.max_by { |o, _d, u| o.length }
+      if overlap.length >= 12
+        solved.push(unsolved_orientation.with_offset(diff))
+        unsolved.delete(unsolved_scanner)
+        puts "found TODO - #{unsolved_scanner.name}. diff = #{diff}. #{unsolved.length} remain."
+        return
       end
     end
     raise NotImplementedError, "couldn't find any matches"
