@@ -10,23 +10,27 @@ class Day19
     solved.flat_map(&:beacons).uniq.length
   end
 
-  def find_match!(solved, unsolved)
-    unsolved.each do |unsolved_scanner|
+  def find_matches!(solved, unsolved)
+    utmost = unsolved.map do |unsolved_scanner|
       outer = Parallel.map(unsolved_scanner.possible_orientations) do |unsolved_orientation|
         overlaps = solved.map do |solved_scanner|
           solved_scanner.biggest_overlaps(unsolved_orientation)
         end
-        overlaps.max_by { |o, _d| o.length } + [unsolved_orientation]
+        overlaps.max_by { |o, _d| o } + [unsolved_orientation, unsolved_scanner]
       end
-      overlap, diff, unsolved_orientation = outer.max_by { |o, _d, u| o.length }
-      if overlap.length >= 12
+      outer.max_by { |o, _d, _uo, _us| o }
+    end
+
+    matches = utmost.select { |o, _d, _uo, _us| o >= 12 }
+    raise NotImplementedError, "couldn't find any matches" if matches.empty?
+
+    matches.each do |olength, diff, unsolved_orientation, unsolved_scanner|
+      if olength >= 12
         solved.push(unsolved_orientation.with_offset(diff))
-        unsolved.delete(unsolved_scanner)
+        unsolved.delete_if { |it| it.name == unsolved_scanner.name }
         puts "found TODO - #{unsolved_scanner.name}. diff = #{diff}. #{unsolved.length} remain."
-        return
       end
     end
-    raise NotImplementedError, "couldn't find any matches"
   end
 
   def part2
@@ -83,9 +87,9 @@ class Day19
 
       overlaps = possible_offsets.map do |diff|
         opoints = other_beacons.map { |beac| beac + diff }
-        [beacons_set & opoints, diff]
+        [(beacons_set & opoints).length, diff]
       end
-      overlaps.max_by { |overlaps, _diff| overlaps.length }
+      overlaps.max_by { |olength, _diff| olength }
     end
 
     private
@@ -118,7 +122,7 @@ class Day19
     solved = scanners.take(1).to_a
     unsolved = scanners.drop(1).to_a
     while unsolved.any?
-      find_match!(solved, unsolved)
+      find_matches!(solved, unsolved)
     end
     @solved = solved
   end
