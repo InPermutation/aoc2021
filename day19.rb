@@ -10,24 +10,6 @@ class Day19
     solved.flat_map(&:beacons).uniq.length
   end
 
-  def find_matches(solved, unsolved)
-    unsolved
-      .map { |uscan| find_one(solved, uscan) }
-      .select { |_d, o, _uo, _us| o >= 12 }
-  end
-
-  def find_one(solved, unsolved_scanner)
-    sdiff = solved - already_tried[unsolved_scanner]
-    already_tried[unsolved_scanner] += solved
-    outer = Parallel.map(unsolved_scanner.possible_orientations) do |unsolved_orientation|
-      overlaps = sdiff.map do |solved_scanner|
-        solved_scanner.biggest_overlaps(unsolved_orientation)
-      end
-      overlaps.max_by { |_d, o| o } + [unsolved_orientation, unsolved_scanner]
-    end
-    outer.max_by { |_d, o, _uo, _us| o }
-  end
-
   def part2
     offsets = solved
               .map(&:offset_from_0)
@@ -132,6 +114,24 @@ class Day19
       end
     end
     solved
+  end
+
+  def find_matches(solved, unsolved)
+    unsolved
+      .map { |uscan| find_one(solved, uscan) }
+      .select { |_d, o, _uo, _us| o >= 12 }
+  end
+
+  def find_one(solved, unsolved_scanner)
+    sdiff = solved - already_tried[unsolved_scanner]
+    already_tried[unsolved_scanner] += solved
+    outer = Parallel.map(unsolved_scanner.possible_orientations) do |unsolved_orientation|
+      overlaps = sdiff.map do |solved_scanner|
+        solved_scanner.biggest_overlaps(unsolved_orientation)
+      end
+      overlaps.max_by { |_d, o| o } + [unsolved_orientation, unsolved_scanner]
+    end
+    outer.max_by { |_d, o, _uo, _us| o }
   end
 end
 
