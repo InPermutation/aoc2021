@@ -2,14 +2,10 @@
 # frozen_string_literal: true
 
 require 'matrix'
+require 'set'
 
 class Day19
   def part1
-    solved = scanners.take(1).to_a
-    unsolved = scanners.drop(1).to_a
-    while unsolved.any?
-      find_match!(solved, unsolved)
-    end
     solved.flat_map(&:beacons).uniq.length
   end
 
@@ -31,17 +27,28 @@ class Day19
   end
 
   def part2
+    offsets = solved
+      .map(&:offset_from_0)
+    offsets
+      .product(offsets)
+      .map { |v1, v2| (v1 - v2) }
+      .map(&method(:manhattan_distance))
+      .max
   end
 
   private
 
+  def manhattan_distance(vector)
+    vector.to_a.map(&:abs).sum
+  end
+
   class Scanner
-    attr_reader :name, :beacons
+    attr_reader :name, :beacons, :offset_from_0
 
     BASES = [
-      Vector[1, 0, 0, 0],
-      Vector[0, 1, 0, 0],
-      Vector[0, 0, 1, 0]
+      Vector.basis(size: 4, index: 0),
+      Vector.basis(size: 4, index: 1),
+      Vector.basis(size: 4, index: 2)
     ].freeze
     ORDERINGS = [0, 1, 2].permutation(3).to_a.uniq.freeze
     REFLECTIONS = [-1, 1].product([-1, 1]).product([-1, 1]).map(&:flatten).to_a.freeze
@@ -63,46 +70,54 @@ class Day19
 
     def with_offset(d)
       n = beacons.map { |b| b + d }
-      Scanner.new(name, n)
+      Scanner.new(name, n, d)
     end
 
     def biggest_overlaps(other)
       possible_offsets = beacons.product(other.beacons).map { |s, u| s - u }.uniq
+      other_beacons = other.beacons.to_a
+      beacons_set = beacons.to_set
 
       overlaps = possible_offsets.map do |diff|
-        opoints = other.beacons.map { |beac| beac + diff }
-        [opoints & beacons, diff]
+        opoints = other_beacons.map { |beac| beac + diff }
+        [beacons_set & opoints, diff]
       end
       overlaps.max_by { |overlaps, _diff| overlaps.length }
     end
 
     private
 
-    def initialize(name, beacons)
+    def initialize(name, beacons, offset_from_0 = Vector[0, 0, 0])
       @name = name
-      @beacons = beacons
+      @beacons = beacons.freeze
+      @offset_from_0 = offset_from_0
     end
   end
 
-  attr_reader :scanners
+  attr_reader :solved
 
   def initialize(lines)
-    @scanners = []
+    scanners = []
     name = nil
     beacons = nil
 
     lines.each do |line|
       next if line.empty?
       if line.start_with?('---')
-        @scanners << Scanner.new(name, beacons.freeze) if name
+        scanners << Scanner.new(name, beacons) if name
         name = line.gsub('---', '').strip.freeze
         beacons = []
       else
         beacons << Vector.elements(line.split(',').map(&:to_i))
       end
     end
-    @scanners << Scanner.new(name, beacons.freeze)
-    @scanners = scanners.freeze
+    scanners << Scanner.new(name, beacons)
+    solved = scanners.take(1).to_a
+    unsolved = scanners.drop(1).to_a
+    while unsolved.any?
+      find_match!(solved, unsolved)
+    end
+    @solved = solved
   end
 end
 
