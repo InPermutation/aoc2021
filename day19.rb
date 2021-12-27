@@ -17,11 +17,11 @@ class Day19
     unsolved.each do |unsolved_scanner|
       unsolved_scanner.possible_orientations.each.with_index do |unsolved_orientation, i|
         solved.each do |solved_scanner|
-          overlap = solved_scanner.biggest_overlaps(unsolved_orientation)
+          overlap, diff = solved_scanner.biggest_overlaps(unsolved_orientation)
           if overlap.length >= 12
-            solved.push(unsolved_orientation)
+            solved.push(unsolved_orientation.with_offset(diff))
             unsolved.delete(unsolved_scanner)
-            puts "found #{solved_scanner.name} - #{unsolved_scanner.name}. #{unsolved.length} remain."
+            puts "found #{solved_scanner.name} - #{unsolved_scanner.name}. diff = #{diff}. #{unsolved.length} remain."
             return
           end
         end
@@ -61,14 +61,19 @@ class Day19
       }
     end
 
+    def with_offset(d)
+      n = beacons.map { |b| b + d }
+      Scanner.new(name, n)
+    end
+
     def biggest_overlaps(other)
       possible_offsets = beacons.product(other.beacons).map { |s, u| s - u }.uniq
 
       overlaps = possible_offsets.map do |diff|
         opoints = other.beacons.map { |beac| beac + diff }
-        opoints & beacons
+        [opoints & beacons, diff]
       end
-      overlaps.max_by(&:length)
+      overlaps.max_by { |overlaps, _diff| overlaps.length }
     end
 
     private
