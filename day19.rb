@@ -11,19 +11,10 @@ class Day19
   end
 
   def find_matches!(solved, unsolved)
-    utmost = unsolved.map do |unsolved_scanner|
-      sdiff = solved - already_tried[unsolved_scanner]
-      already_tried[unsolved_scanner] += solved
-      outer = Parallel.map(unsolved_scanner.possible_orientations) do |unsolved_orientation|
-        overlaps = sdiff.map do |solved_scanner|
-          solved_scanner.biggest_overlaps(unsolved_orientation)
-        end
-        overlaps.max_by { |_d, o| o } + [unsolved_orientation, unsolved_scanner]
-      end
-      outer.max_by { |_d, o, _uo, _us| o }
-    end
+    matches = unsolved
+      .map { |uscan| find_one(solved, uscan) }
+      .select { |_d, o, _uo, _us| o >= 12 }
 
-    matches = utmost.select { |_d, o, _uo, _us| o >= 12 }
     raise NotImplementedError, "couldn't find any matches" if matches.empty?
 
     matches.each do |diff, _, unsolved_orientation, unsolved_scanner|
@@ -31,6 +22,18 @@ class Day19
       unsolved.delete_if { |it| it.name == unsolved_scanner.name }
       puts "found TODO - #{unsolved_scanner.name}. diff = #{diff}. #{unsolved.length} remain."
     end
+  end
+
+  def find_one(solved, unsolved_scanner)
+    sdiff = solved - already_tried[unsolved_scanner]
+    already_tried[unsolved_scanner] += solved
+    outer = Parallel.map(unsolved_scanner.possible_orientations) do |unsolved_orientation|
+      overlaps = sdiff.map do |solved_scanner|
+        solved_scanner.biggest_overlaps(unsolved_orientation)
+      end
+      overlaps.max_by { |_d, o| o } + [unsolved_orientation, unsolved_scanner]
+    end
+    outer.max_by { |_d, o, _uo, _us| o }
   end
 
   def part2
