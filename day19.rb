@@ -53,14 +53,13 @@ class Day19
     end
 
     def with_offset(d)
-      n = beacons.map { |b| b + d }
+      n = beacons.map(&d.method(:+))
       Scanner.new(name, n, d)
     end
 
     def biggest_overlaps(other)
       possible_offsets = beacons.product(other.beacons).map { |s, u| s - u }
-      t = possible_offsets.tally
-      t.max_by { |_diff, count| count }
+      possible_offsets.tally.max_by { |_diff, count| count }
     end
 
     private
