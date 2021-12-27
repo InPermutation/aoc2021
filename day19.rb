@@ -27,11 +27,9 @@ class Day19
     raise NotImplementedError, "couldn't find any matches" if matches.empty?
 
     matches.each do |olength, diff, unsolved_orientation, unsolved_scanner|
-      if olength >= 12
-        solved.push(unsolved_orientation.with_offset(diff))
-        unsolved.delete_if { |it| it.name == unsolved_scanner.name }
-        puts "found TODO - #{unsolved_scanner.name}. diff = #{diff}. #{unsolved.length} remain."
-      end
+      solved.push(unsolved_orientation.with_offset(diff))
+      unsolved.delete_if { |it| it.name == unsolved_scanner.name }
+      puts "found TODO - #{unsolved_scanner.name}. diff = #{diff}. #{unsolved.length} remain."
     end
   end
 
