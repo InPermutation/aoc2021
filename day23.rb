@@ -6,6 +6,7 @@ require 'lazy_priority_queue'
 
 class AmphipodState
   attr_reader :spaces, :rooms, :rownums
+
   # spaces[space{11}]
   #
   # 0123456789A
@@ -17,13 +18,13 @@ class AmphipodState
   #   TopD BotD
 
   def inspect
-    "<#{self.class} rooms='\n#############\n" +
-      "#" + spaces.map { |ch| ch || '.' }.join('') + "#\n" +
-      rownums.map { |row|
-        (row == 0 ? "###" : "  #") +
+    "<#{self.class} rooms='\n#############\n" \
+      '#' + spaces.map { |ch| ch || '.' }.join('') + "#\n" +
+      rownums.map do |row|
+        (row.zero? ? '###' : '  #') +
           rooms.map { |rcol| rcol[row] || '.' }.join('#') +
-          (row == 0 ? '###' : '#')
-      }.join("\n") +
+          (row.zero? ? '###' : '#')
+      end.join("\n") +
       "\n  #########\n' heuristic=#{heuristic_cost}>"
   end
   alias to_s inspect
@@ -105,6 +106,7 @@ class AmphipodState
       rcol = rooms[col]
       rownums.each do |row|
         next if type == rcol[row]
+
         down_moves = row + 1
         sum += (down_moves * COSTS[type])
       end
@@ -131,19 +133,21 @@ class AmphipodState
         # nobody here:
         next unless type
         # i'm blocked in:
-        next unless rownums.all? { |rnum|
+        next unless rownums.all? do |rnum|
           rnum >= row || rcol[rnum].nil?
-        }
+        end
+
         # i'm already home:
-        if col == TYPE_COL[type]
-          next if rownums.all? { |rnum|
-            rnum <= row || rcol[rnum] == type
-          }
+        if col == TYPE_COL[type] && rownums.all? do |rnum|
+             rnum <= row || rcol[rnum] == type
+           end
+          next
         end
 
         start_col = 2 * (col + 1)
         reachable(start_col).each do |open_col|
           next if HALLS.include?(open_col)
+
           mout << move_one_out(row, col, start_col, open_col)
         end
       end
@@ -154,13 +158,13 @@ class AmphipodState
   def reachable(start_col)
     allowed_spaces = spaces.map.with_index.to_a
     to_left = allowed_spaces
-      .reverse
-      .drop_while { |_space, ix| ix >= start_col }
-      .take_while { |space, _ix| space.nil? }
-      .reverse
+              .reverse
+              .drop_while { |_space, ix| ix >= start_col }
+              .take_while { |space, _ix| space.nil? }
+              .reverse
     to_right = allowed_spaces
-      .drop_while { |_space, ix| ix <= start_col }
-      .take_while { |space, _ix| space.nil? }
+               .drop_while { |_space, ix| ix <= start_col }
+               .take_while { |space, _ix| space.nil? }
     (to_left + to_right)
       .map { |_nil, col| col }
   end
@@ -242,7 +246,7 @@ class Day23
 
   attr_reader :amphipods_init, :amphipods_extended_init
 
-  EFFECTIVE_INFINITY = 1<<63
+  EFFECTIVE_INFINITY = 1 << 63
   def self.a_star(start)
     scores = Hash.new(EFFECTIVE_INFINITY)
     scores[start] = 0
@@ -251,38 +255,38 @@ class Day23
     fScore.push start, 0 + start.heuristic_cost
 
     iter = 0
-    while !fScore.empty?
+    until fScore.empty?
       current = fScore.pop
       curr_score = scores[current]
 
       if current.solved?
         raise StandardError if start.heuristic_cost > curr_score
+
         return curr_score
       end
 
       current.moves.each do |neighbor, dist|
         tentative_score = curr_score + dist
-        if tentative_score < scores[neighbor]
-          new_score = tentative_score + neighbor.heuristic_cost
-          if scores[neighbor] == EFFECTIVE_INFINITY
-            fScore.push neighbor, new_score
-          else
-            fScore.decrease_key neighbor, new_score
-          end
-          scores[neighbor] = tentative_score
+        next unless tentative_score < scores[neighbor]
 
+        new_score = tentative_score + neighbor.heuristic_cost
+        if scores[neighbor] == EFFECTIVE_INFINITY
+          fScore.push neighbor, new_score
+        else
+          fScore.decrease_key neighbor, new_score
         end
+        scores[neighbor] = tentative_score
       end
     end
 
-    return :failure
+    :failure
   end
 
   def self.rooms_from(lines)
     lines
       .drop(2)
       .take_while { |line| !line.start_with?('  ###') }
-      .map { |line|
+      .map do |line|
         rms = line.gsub(' ', '').gsub('#', '')
         rms.chars.map do |ch|
           case ch
@@ -292,7 +296,7 @@ class Day23
             ch
           end
         end
-      }
+      end
   end
 
   def initialize(lines)
