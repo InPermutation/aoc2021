@@ -1,8 +1,11 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require 'set'
+require 'lazy_priority_queue'
+
 class AmphipodState
-  attr_reader :score, :spaces, :rooms
+  attr_reader :spaces, :rooms
   # spaces[space{11}]
   #
   # 0123456789A
@@ -12,13 +15,22 @@ class AmphipodState
   #   0 1 2 3
 
   def inspect
-    "<#{self.class} score=#{score} rooms='\n#############\n" +
+    "<#{self.class} rooms='\n#############\n" +
       "#" + spaces.map { |ch| ch || '.' }.join('') + "#\n" +
       "###" + rooms[0].map { |ch| ch || '.' }.join('#') + "###\n" +
       "  #" + rooms[1].map { |ch| ch || '.' }.join('#') + "#\n" +
       "  #########\n' heuristic=#{heuristic_cost}>"
   end
   alias to_s inspect
+
+  def ==(other)
+    spaces == other.spaces && rooms == other.rooms
+  end
+  alias eql? ==
+
+  def hash
+    spaces.hash ^ rooms.hash
+  end
 
   def moves
     # Amphipods will never move from the hallway into a room
@@ -30,7 +42,6 @@ class AmphipodState
 
   TARGET_SOLUTION = [['A', 'B', 'C', 'D'].freeze,
                      ['A', 'B', 'C', 'D'].freeze].freeze
-
   def solved?
     return false unless spaces.compact.empty?
     return false unless rooms == TARGET_SOLUTION
@@ -38,39 +49,47 @@ class AmphipodState
   end
 
   def self.init_from(rooms)
-    new(0, Array.new(11).freeze, rooms)
+    new(Array.new(11).freeze, rooms.freeze)
   end
 
   def heuristic_cost
     # will be <= the actual cost
-    @cached_heuristic ||= (score + heuristic_from_rooms + heuristic_from_hall)
+    heuristic_from_rooms + heuristic_from_hall
   end
 
   private
 
+  COLS = (0..3).to_a.freeze
+  ROWS = (0..1).to_a.freeze
   def heuristic_from_rooms
-    (0..3).flat_map do |col|
-      (0..1).flat_map do |row|
+    sum = 0
+    COLS.each do |col|
+      start_col = 2 * (col + 1)
+      ROWS.each do |row|
         type = rooms[row][col]
         next unless type
-        start_col = 2 * (col + 1)
-        desired_col = 2 * (TYPE_COL[type] + 1)
-        next if start_col == desired_col
-        basis_cost = COSTS[type]
+
+        tcol = TYPE_COL[type]
+        next if col == tcol
+
+        desired_col = 2 * (tcol + 1)
         min_moves = (start_col - desired_col).abs + 1 + row + 1
-        (min_moves * basis_cost)
+        sum += (min_moves * COSTS[type])
       end
-    end.compact.sum
+    end
+    sum
   end
 
   def heuristic_from_hall
-    spaces.map.with_index do |type, col|
+    sum = 0
+    spaces.each.with_index do |type, col|
       next unless type
+
       desired_col = 2 * (TYPE_COL[type] + 1)
-      basis_cost = COSTS[type]
       min_moves = (col - desired_col).abs + 1
-      (min_moves * basis_cost)
-    end.compact.sum
+      sum += (min_moves * COSTS[type])
+    end
+    sum
   end
 
   COSTS = {
@@ -84,8 +103,8 @@ class AmphipodState
     # Amphipods will never stop on the space immediately outside any room.
     mout = []
 
-    (0..3).each do |col|
-      (0..1).each do |row|
+    COLS.each do |col|
+      ROWS.each do |row|
         type = rooms[row][col]
 
         # nobody here:
@@ -99,7 +118,7 @@ class AmphipodState
         end
 
         start_col = 2 * (col + 1)
-        reachable(start_col).each do |_nil, open_col|
+        reachable(start_col).each do |open_col|
           next if HALLS.include?(open_col)
           mout << move_one_out(row, col, start_col, open_col)
         end
@@ -118,12 +137,12 @@ class AmphipodState
     to_right = allowed_spaces
       .drop_while { |_space, ix| ix <= start_col }
       .take_while { |space, _ix| space.nil? }
-    to_left + to_right
+    (to_left + to_right)
+      .map { |_nil, col| col }
   end
 
   def move_one_out(row, col, start_col, open_col)
     type = rooms[row][col]
-    cost_basis = COSTS[type]
     rooms_copy = rooms.map(&:dup)
     spaces_copy = spaces.dup
 
@@ -131,9 +150,9 @@ class AmphipodState
     spaces_copy[open_col] = type
 
     moves_count = (row + 1) + (start_col - open_col).abs
-    cost = moves_count * cost_basis
+    cost = moves_count * COSTS[type]
 
-    self.class.new(score + cost, spaces_copy, rooms_copy)
+    [self.class.new(spaces_copy, rooms_copy), cost]
   end
 
   def move_one_home(type, col, desired_home)
@@ -142,20 +161,21 @@ class AmphipodState
     spaces_copy = spaces.dup
 
     spaces_copy[col] = nil
+    desired_col = TYPE_COL[type]
 
     moves_count = (desired_home - col).abs
 
-    if rooms_copy[1][TYPE_COL[type]].nil?
+    if rooms_copy[1][desired_col].nil?
       moves_count += 2
-      rooms_copy[1][TYPE_COL[type]] = type
+      rooms_copy[1][desired_col] = type
     else
       moves_count += 1
-      rooms_copy[0][TYPE_COL[type]] = type
+      rooms_copy[0][desired_col] = type
     end
 
     cost = moves_count * cost_basis
 
-    self.class.new(score + cost, spaces_copy, rooms_copy)
+    [self.class.new(spaces_copy, rooms_copy), cost]
   end
 
   def moves_home
@@ -166,7 +186,7 @@ class AmphipodState
 
       desired_home = (TYPE_COL[type] + 1) * 2
 
-      next unless reachable(col).any? do |_nil, target_col|
+      next unless reachable(col).any? do |target_col|
         target_col == desired_home
       end
 
@@ -183,8 +203,7 @@ class AmphipodState
       (rooms[1][tcol] == type && rooms[0][tcol].nil?)
   end
 
-  def initialize(score, spaces, rooms)
-    @score = score
+  def initialize(spaces, rooms)
     @spaces = spaces.map(&:freeze).freeze
     @rooms = rooms.map(&:freeze).freeze
   end
@@ -192,32 +211,57 @@ end
 
 class Day23
   def part1
-    p states = [amphipods_init]
-    solved = 0
-    best = 99999999999999999999999
-
-    until states.empty?
-      # Because we pop and append at the same end, this is a depth-first search
-      # which will use less memory, but O(time) ~= O(time) of breadth-first.
-      state = states.pop
-      if state.solved?
-        best = [best, state.score].min
-        solved += 1
-        p state
-      else
-        states += (state.moves)
-      end
-      states = states.reject { |s| s.heuristic_cost >= best }
-      p states_count: states.length, solved_count: solved, best: best
-    end
-
-    best
+    start = amphipods_init
+    self.class.a_star(start)
   end
 
   def part2
   end
 
   attr_reader :amphipods_init
+
+  private
+
+  EFFECTIVE_INFINITY = 1<<63
+  def self.a_star(start)
+    scores = Hash.new(EFFECTIVE_INFINITY)
+    scores[start] = 0
+
+    fScore = MinPriorityQueue.new
+    fScore.push start, 0 + start.heuristic_cost
+
+    iter = 0
+    while !fScore.empty?
+      current = fScore.pop
+      curr_score = scores[current]
+
+      if (iter += 1) % 1000 == 0
+        puts current
+        puts "(#{curr_score})"
+        p gLen: scores.length, fLen: fScore.length
+      end
+
+      return curr_score if current.solved?
+
+      current.moves.each do |neighbor, dist|
+        tentative_score = curr_score + dist
+        if tentative_score < scores[neighbor]
+          new_score = tentative_score + neighbor.heuristic_cost
+
+          if scores[neighbor] == EFFECTIVE_INFINITY
+            fScore.push neighbor, new_score
+          else
+            fScore.decrease_key neighbor, new_score
+          end
+          scores[neighbor] = tentative_score
+
+        end
+      end
+    end
+
+    return :failure
+  end
+
 
   def initialize(lines)
     rooms = lines
