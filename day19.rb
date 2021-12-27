@@ -18,15 +18,15 @@ class Day19
         overlaps = sdiff.map do |solved_scanner|
           solved_scanner.biggest_overlaps(unsolved_orientation)
         end
-        overlaps.max_by { |o, _d| o } + [unsolved_orientation, unsolved_scanner]
+        overlaps.max_by { |_d, o| o } + [unsolved_orientation, unsolved_scanner]
       end
-      outer.max_by { |o, _d, _uo, _us| o }
+      outer.max_by { |_d, o, _uo, _us| o }
     end
 
-    matches = utmost.select { |o, _d, _uo, _us| o >= 12 }
+    matches = utmost.select { |_d, o, _uo, _us| o >= 12 }
     raise NotImplementedError, "couldn't find any matches" if matches.empty?
 
-    matches.each do |olength, diff, unsolved_orientation, unsolved_scanner|
+    matches.each do |diff, _, unsolved_orientation, unsolved_scanner|
       solved.push(unsolved_orientation.with_offset(diff))
       unsolved.delete_if { |it| it.name == unsolved_scanner.name }
       puts "found TODO - #{unsolved_scanner.name}. diff = #{diff}. #{unsolved.length} remain."
@@ -81,15 +81,9 @@ class Day19
     end
 
     def biggest_overlaps(other)
-      possible_offsets = beacons.product(other.beacons).map { |s, u| s - u }.uniq
-      other_beacons = other.beacons.to_a
-      beacons_set = beacons.to_set
-
-      overlaps = possible_offsets.map do |diff|
-        opoints = other_beacons.map { |beac| beac + diff }
-        [(beacons_set & opoints).length, diff]
-      end
-      overlaps.max_by { |olength, _diff| olength }
+      possible_offsets = beacons.product(other.beacons).map { |s, u| s - u }
+      t = possible_offsets.tally
+      t.max_by { |_diff, count| count }
     end
 
     private
